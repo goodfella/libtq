@@ -175,7 +175,6 @@ int task_queue::wait_for_task(itask * const task)
     int rc = 0;
     mutex_lock lock(&m_lock);
 
-    rc = 0;
     list<task_desc>::iterator req_task = find(m_tasks.begin(),
 					      m_tasks.end(),
 					      task);
@@ -209,13 +208,13 @@ void* task_queue::task_runner(void* tqueue)
 
     pthread_mutex_lock(&queue->m_lock);
 
-    pthread_cleanup_push(task_queue::handle_cancelation, queue);
-
     if( queue->m_shutdown == true )
     {
 	handle_cancelation(queue);
 	pthread_exit(NULL);
     }
+
+    pthread_cleanup_push(task_queue::handle_cancelation, queue);
 
     do
     {
