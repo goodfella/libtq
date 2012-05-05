@@ -8,9 +8,11 @@
 using namespace std;
 using namespace libtq;
 
-class mutex_lock
+namespace libtq
 {
-    public:
+    class mutex_lock
+    {
+	public:
 
 	mutex_lock(pthread_mutex_t* lock);
 	~mutex_lock();
@@ -19,10 +21,11 @@ class mutex_lock
 	void lock(pthread_mutex_t* lock);
 	void cancel();
 
-    private:
+	private:
 
 	pthread_mutex_t* m_lock;
-};
+    };
+}
 
 mutex_lock::mutex_lock(pthread_mutex_t* lock):
     m_lock(lock)
@@ -168,10 +171,15 @@ int task_queue::cancel_task(itask * const task)
     return rc;
 }
 
-int task_queue::wait_for_task(itask * const task)
+int task_queue::priv_wait_for_task(const task_desc& desc)
+{
+    task_desc my_desc = desc;
+    return my_desc.wait_for_task(&m_lock);
+}
+
+int task_queue::priv_wait_for_task(itask * const task, mutex_lock& lock)
 {
     int rc = 0;
-    mutex_lock lock(&m_lock);
 
     list<task_desc>::iterator req_task = find(m_tasks.begin(),
 					      m_tasks.end(),
@@ -179,14 +187,19 @@ int task_queue::wait_for_task(itask * const task)
 
     if( req_task != m_tasks.end() )
     {
-	task_desc desc = *req_task;
+	lock.cancel();
 
 	// wait_for_task will properly unlock the lock
-	lock.cancel();
-	rc = req_task->wait_for_task(&m_lock);
+	rc = priv_wait_for_task(*req_task);
     }
 
     return rc;
+}
+
+int task_queue::wait_for_task(itask * const task)
+{
+    mutex_lock lock(&m_lock);
+    return priv_wait_for_task(task, lock);
 }
 
 void* task_queue::task_runner(void* tqueue)
