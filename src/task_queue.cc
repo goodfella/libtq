@@ -27,6 +27,19 @@ namespace libtq
     };
 }
 
+namespace
+{
+    struct shutdown_task : public itask
+    {
+	void run();
+    };
+
+    void shutdown_task::run()
+    {
+	pthread_cancel(pthread_self());
+    }
+}
+
 mutex_lock::mutex_lock(pthread_mutex_t* lock):
     m_lock(lock)
 {
@@ -61,30 +74,31 @@ void mutex_lock::cancel()
 }
 
 task_queue::task_queue():
-    m_started(false),
-    m_shutdown(true)
+    m_started(false)
 {
     pthread_mutex_init(&m_lock, NULL);
+    pthread_mutex_init(&m_shutdown_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
+    pthread_cond_init(&m_shutdown_cond, NULL);
 }
 
 task_queue::~task_queue()
 {
     stop_queue();
+    pthread_cond_destroy(&m_shutdown_cond);
     pthread_cond_destroy(&m_cond);
+    pthread_mutex_destroy(&m_shutdown_lock);
     pthread_mutex_destroy(&m_lock);
 }
 
 bool task_queue::start_queue()
 {
-    mutex_lock lock(&m_lock);
+    mutex_lock lock(&m_shutdown_lock);
 
     if( m_started == true )
     {
 	return false;
     }
-
-    m_shutdown = false;
 
     int start_ret = pthread_create(&m_thread, NULL, task_runner, this);
     bool started = m_started = (start_ret == 0 ? true : false);
@@ -94,22 +108,40 @@ bool task_queue::start_queue()
 
 void task_queue::stop_queue()
 {
-    mutex_lock lock(&m_lock);
+    pthread_mutex_lock(&m_shutdown_lock);
+    pthread_mutex_lock(&m_lock);
 
     if( m_started == false )
     {
+	pthread_mutex_unlock(&m_lock);
+	pthread_mutex_unlock(&m_shutdown_lock);
 	return;
     }
 
-    m_shutdown = true;
+    shutdown_task kill_task_runner;
 
-    if( m_tasks.size() == 0 )
+    try
     {
-	pthread_cond_signal(&m_cond);
+	priv_queue_task(&kill_task_runner);
+    }
+    catch(...)
+    {
+	pthread_mutex_unlock(&m_lock);
+	pthread_mutex_unlock(&m_shutdown_lock);
+	throw;
     }
 
-    lock.unlock();
-    pthread_join(m_thread, NULL);
+    // at this point, kill_task_runner is in the back of the list
+    priv_wait_for_task(m_tasks.back());
+
+    // At this point, m_lock is unlocked and the task runner should be
+    // waiting on the shutdown lock in it's cancelation routine
+    while( m_started == true )
+    {
+	pthread_cond_wait(&m_shutdown_cond, &m_shutdown_lock);
+    }
+
+    pthread_mutex_unlock(&m_shutdown_lock);
 }
 
 void task_queue::priv_queue_task(itask * const task)
@@ -227,12 +259,6 @@ void* task_queue::task_runner(void* tqueue)
 
     pthread_mutex_lock(&queue->m_lock);
 
-    if( queue->m_shutdown == true )
-    {
-	handle_cancelation(queue);
-	pthread_exit(NULL);
-    }
-
     pthread_cleanup_push(task_queue::handle_cancelation, queue);
 
     do
@@ -281,7 +307,7 @@ void* task_queue::task_runner(void* tqueue)
 	    pthread_cond_wait(&queue->m_cond, &queue->m_lock);
 	}
 
-    } while ( queue->m_shutdown == false );
+    } while ( true );
 
     pthread_cleanup_pop(1);
     pthread_exit(NULL);
@@ -291,6 +317,11 @@ void task_queue::handle_cancelation(void* tqueue)
 {
     task_queue* queue = static_cast<task_queue*>(tqueue);
 
-    queue->m_shutdown = false;
     pthread_mutex_unlock(&queue->m_lock);
+    pthread_mutex_lock(&queue->m_shutdown_lock);
+
+    queue->m_started = false;
+
+    pthread_cond_broadcast(&queue->m_shutdown_cond);
+    pthread_mutex_unlock(&queue->m_shutdown_lock);
 }

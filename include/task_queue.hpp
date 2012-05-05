@@ -28,10 +28,11 @@ namespace libtq
 	private:
 
 	bool m_started;
-	bool m_shutdown;
 	std::list<task_desc> m_tasks;
 	pthread_mutex_t m_lock;
+	pthread_mutex_t m_shutdown_lock;
 	pthread_cond_t m_cond;
+	pthread_cond_t m_shutdown_cond;
 	pthread_t m_thread;
 
 	// assumes m_lock is held prior to being called
