@@ -239,6 +239,10 @@ void* task_queue::task_runner(void* tqueue)
 	{
 	    task_desc task = queue->m_tasks.front();
 
+	    // set the cancel state to disable to prevent any tasks
+	    // invoking the cancelation routines in an untimely manner
+	    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+
 	    pthread_mutex_unlock(&queue->m_lock);
 
 	    task.run_task();
@@ -250,6 +254,11 @@ void* task_queue::task_runner(void* tqueue)
 	    // After the unlock above, there could be threads waiting
 	    // for this task, so signal them.
 	    task.signal_finished();
+
+	    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
+	    // check if there are any pending cancelations
+	    pthread_testcancel();
 
 	    // give the waiting threads a chance to run
 	    pthread_mutex_unlock(&queue->m_lock);
