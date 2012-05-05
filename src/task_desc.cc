@@ -59,6 +59,8 @@ void task_desc::cleanup_waiter(void* waiter)
 {
     wait_desc* desc = static_cast<wait_desc*>(waiter);
     pthread_mutex_unlock(desc->mutex);
+    pthread_cond_destroy(desc->condition);
+
     desc->remove_from_waitlist();
 }
 
@@ -67,10 +69,19 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
     bool finished = false;
     pthread_cond_t cond;
     sigset_t signal_mask, old_sigmask;
+    int rc;
 
     // block all signals on this thread so that the thread can
     // properly clean up its resources
-    int rc = pthread_sigmask(SIG_BLOCK, &signal_mask, &old_sigmask);
+    rc = sigfillset(&signal_mask);
+
+    if( rc != 0 )
+    {
+	pthread_mutex_unlock(lock);
+	return rc;
+    }
+
+    rc = pthread_sigmask(SIG_BLOCK, &signal_mask, &old_sigmask);
 
     if( rc != 0 )
     {
@@ -79,10 +90,9 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
     }
 
     pthread_cond_init(&cond, NULL);
-
     wait_desc desc(lock, &cond, &finished);
     add_to_waitlist(&desc);
-    
+
     // insures that if the thread is canceled, the wait_desc is pulled
     // off the waiters list and the mutex is unlocked
     pthread_cleanup_push(task_desc::cleanup_waiter, &desc);
@@ -95,8 +105,6 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
 
     // cleanup_waiter removes the wait_desc from the waiter list
     pthread_cleanup_pop(1);
-
-    pthread_cond_destroy(&cond);
 
     // restore the signal mask
     rc = pthread_sigmask(SIG_BLOCK, &old_sigmask, NULL);
