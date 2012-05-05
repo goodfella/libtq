@@ -111,25 +111,23 @@ void task_queue::stop_queue()
 
 void task_queue::priv_queue_task(itask * const task)
 {
-
-    m_tasks.push_back(task_desc(task));
-
-    // task was empty signal the task runner
-    if( m_tasks.size() == 1 )
+    // a task can only be scheduled once
+    if( find(m_tasks.begin(), m_tasks.end(), task) == m_tasks.end() )
     {
-	pthread_cond_signal(&m_cond);
+	m_tasks.push_back(task_desc(task));
+
+	// task was empty signal the task runner
+	if( m_tasks.size() == 1 )
+	{
+	    pthread_cond_signal(&m_cond);
+	}
     }
 }
 
 void task_queue::queue_task(itask * const task)
 {
     mutex_lock lock(&m_lock);
-
-    // a task can only be scheduled once
-    if( find(m_tasks.begin(), m_tasks.end(), task) == m_tasks.end() )
-    {
-	priv_queue_task(task);
-    }
+    priv_queue_task(task);
 }
 
 int task_queue::cancel_task(itask * const task)
