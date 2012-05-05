@@ -89,6 +89,11 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
 	return rc;
     }
 
+    // set the cancel type to deffered because it's required for
+    // pushing cancelation routines
+    int old_cancel_type;
+    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_cancel_type);
+
     pthread_cond_init(&cond, NULL);
     wait_desc desc(lock, &cond, &finished);
     add_to_waitlist(&desc);
@@ -103,8 +108,12 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
 	pthread_cond_wait(&cond, lock);
     }
 
-    // cleanup_waiter removes the wait_desc from the waiter list
+    // cleanup_waiter removes the wait_desc from the waiter list and
+    // destroys the condition
     pthread_cleanup_pop(1);
+
+    // restore the threads cancel type
+    pthread_setcanceltype(old_cancel_type, NULL);
 
     // restore the signal mask
     rc = pthread_sigmask(SIG_BLOCK, &old_sigmask, NULL);
