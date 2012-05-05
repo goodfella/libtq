@@ -22,6 +22,14 @@ namespace libtq
 	struct wait_desc* prev;
     };
 
+    /** This class keeps track of all the waiters
+     *
+     *  Every thread that wishes to wait on a task, must make a copy
+     *  of this object prior to calling wait_for_task.  The copy gives
+     *  the waiting thread its own task_desc object insuring that the
+     *  waiting thread is not linguring in a mothod of a destroyed
+     *  object.
+     */
     class task_desc
     {
 	public:
