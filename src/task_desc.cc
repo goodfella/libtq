@@ -1,17 +1,44 @@
 #include <signal.h>
+#include <iostream>
 
 #include "task_desc.hpp"
 #include "itask.hpp"
 
+using namespace std;
 using namespace libtq;
 
-wait_desc::wait_desc(pthread_mutex_t* m, pthread_cond_t* cond, bool* fini):
+wait_desc::wait_desc(pthread_mutex_t* m):
     mutex(m),
-    condition(cond),
-    finished(fini),
     next(this),
-    prev(this)
+    prev(this),
+    finished(false)
+{
+    pthread_cond_init(&condition, NULL);
+}
+
+wait_desc::wait_desc():
+    mutex(NULL),
+    next(this),
+    prev(this),
+    finished(true)
 {}
+
+wait_desc::wait_desc(const wait_desc& rhs):
+    mutex(NULL),
+    next(this),
+    prev(this),
+    finished(true)
+{}
+
+wait_desc::~wait_desc()
+{
+    remove_from_waitlist();
+
+    if( mutex != NULL )
+    {
+	pthread_cond_destroy(&condition);
+    }
+}
 
 void wait_desc::add_to_waitlist(wait_desc* wait_list)
 {
@@ -27,47 +54,8 @@ void wait_desc::remove_from_waitlist()
     prev->next = next;
 }
 
-task_desc::task_desc(itask* task):
-    m_task(task),
-    m_waitlist(NULL)
-{}
-
-void task_desc::run_task()
+int wait_desc::wait_for_task()
 {
-    // ignore all exceptions
-    try
-    {
-	m_task->run();
-    }
-    catch (...)
-    {}
-}
-
-void task_desc::add_to_waitlist(wait_desc* desc)
-{
-    if( m_waitlist == NULL )
-    {
-	m_waitlist = desc;
-    }
-    else
-    {
-	desc->add_to_waitlist(m_waitlist);
-    }
-}
-
-void task_desc::cleanup_waiter(void* waiter)
-{
-    wait_desc* desc = static_cast<wait_desc*>(waiter);
-    pthread_mutex_unlock(desc->mutex);
-    pthread_cond_destroy(desc->condition);
-
-    desc->remove_from_waitlist();
-}
-
-int task_desc::wait_for_task(pthread_mutex_t* lock)
-{
-    bool finished = false;
-    pthread_cond_t cond;
     sigset_t signal_mask, old_sigmask;
     int rc;
 
@@ -77,7 +65,6 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
 
     if( rc != 0 )
     {
-	pthread_mutex_unlock(lock);
 	return rc;
     }
 
@@ -85,35 +72,14 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
 
     if( rc != 0 )
     {
-	pthread_mutex_unlock(lock);
 	return rc;
     }
-
-    // set the cancel type to deffered because it's required for
-    // pushing cancelation routines
-    int old_cancel_type;
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_cancel_type);
-
-    pthread_cond_init(&cond, NULL);
-    wait_desc desc(lock, &cond, &finished);
-    add_to_waitlist(&desc);
-
-    // insures that if the thread is canceled, the wait_desc is pulled
-    // off the waiters list and the mutex is unlocked
-    pthread_cleanup_push(task_desc::cleanup_waiter, &desc);
 
     // we wait in a while loop because of spurious wakeups
     while( finished == false )
     {
-	pthread_cond_wait(&cond, lock);
+	pthread_cond_wait(&condition, mutex);
     }
-
-    // cleanup_waiter removes the wait_desc from the waiter list and
-    // destroys the condition
-    pthread_cleanup_pop(1);
-
-    // restore the threads cancel type
-    pthread_setcanceltype(old_cancel_type, NULL);
 
     // restore the signal mask
     rc = pthread_sigmask(SIG_BLOCK, &old_sigmask, NULL);
@@ -121,18 +87,27 @@ int task_desc::wait_for_task(pthread_mutex_t* lock)
     return rc;
 }
 
+task_desc::task_desc(itask* task):
+    m_task(task)
+{}
+
+void task_desc::run_task()
+{
+    m_task->run();
+}
+
+void task_desc::add_to_waitlist(wait_desc* desc)
+{
+    desc->add_to_waitlist(&m_waitlist);
+}
+
 void task_desc::signal_finished()
 {
-    if( m_waitlist == NULL )
-    {
-	return;
-    }
-
     // signal all the waiters that the task is finished
     wait_desc* desc;
-    for(desc = m_waitlist->next; desc != m_waitlist; desc = desc->next)
+    for(desc = m_waitlist.next; desc != &m_waitlist; desc = desc->next)
     {
-	*desc->finished = true;
-	pthread_cond_signal(desc->condition);
+	desc->finished = true;
+	pthread_cond_signal(&desc->condition);
     }
 }

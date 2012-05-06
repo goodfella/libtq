@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <algorithm>
+#include <iostream>
 
 #include "task_queue.hpp"
 #include "task_desc.hpp"
@@ -19,16 +20,81 @@ namespace libtq
 
 	void unlock();
 	void lock(pthread_mutex_t* lock);
-	void cancel();
 
 	private:
 
 	pthread_mutex_t* m_lock;
     };
+
+    /// Runs tasks and handles cleanup in the event of an exception
+    class task_handle
+    {
+	public:
+
+	task_handle(task_queue * const queue);
+	~task_handle();
+	void run_task();
+
+	private:
+
+	task_queue* m_queue;
+    };
+
+    /// Cleans up the task runner after it's exited
+    class task_runner_cleanup
+    {
+	public:
+
+	task_runner_cleanup(task_queue* const queue);
+	~task_runner_cleanup();
+
+	private:
+
+	task_queue* m_queue;
+    };
+
+    task_handle::task_handle(task_queue * const queue):
+	m_queue(queue)
+    {}
+
+    task_handle::~task_handle()
+    {
+	// takes the queue lock, signals waiters and removes the task
+	// from the queue
+	pthread_mutex_lock(&m_queue->m_lock);
+	m_queue->m_tasks.front().signal_finished();
+	m_queue->m_tasks.pop_front();
+    }
+    
+    void task_handle::run_task()
+    {
+	m_queue->m_tasks.front().run_task();
+    }
+
+    task_runner_cleanup::task_runner_cleanup(task_queue * const queue):
+	m_queue(queue)
+    {}
+    
+    task_runner_cleanup::~task_runner_cleanup()
+    {
+	// unlock the queue lock so waiters can wakeup
+	pthread_mutex_unlock(&m_queue->m_lock);
+
+	// take the shutdown lock to modify m_started
+	pthread_mutex_lock(&m_queue->m_shutdown_lock);
+
+	m_queue->m_started = false;
+
+	// signal all queue waiters that the task runner exited
+	pthread_cond_broadcast(&m_queue->m_shutdown_cond);
+	pthread_mutex_unlock(&m_queue->m_shutdown_lock);
+    }
 }
 
 namespace
 {
+    struct shutdown_exception {};
+
     struct shutdown_task : public itask
     {
 	void run();
@@ -36,7 +102,7 @@ namespace
 
     void shutdown_task::run()
     {
-	pthread_cancel(pthread_self());
+	throw shutdown_exception();
     }
 }
 
@@ -68,11 +134,6 @@ void mutex_lock::lock(pthread_mutex_t* lock)
     }
 }
 
-void mutex_lock::cancel()
-{
-    m_lock = NULL;
-}
-
 task_queue::task_queue():
     m_started(false)
 {
@@ -91,7 +152,7 @@ task_queue::~task_queue()
     pthread_mutex_destroy(&m_lock);
 }
 
-bool task_queue::start_queue()
+int task_queue::start_queue()
 {
     mutex_lock lock(&m_shutdown_lock);
 
@@ -101,62 +162,61 @@ bool task_queue::start_queue()
     }
 
     int start_ret = pthread_create(&m_thread, NULL, task_runner, this);
-    bool started = m_started = (start_ret == 0 ? true : false);
+    m_started = (start_ret == 0 ? true : false);
 
-    return started;
+    if( m_started == true )
+    {
+	// detach the thread, so it's resources get cleaned up
+	pthread_detach(m_thread);
+    }
+
+    return start_ret;
 }
 
-void task_queue::stop_queue()
+int task_queue::stop_queue()
 {
-    pthread_mutex_lock(&m_shutdown_lock);
-    pthread_mutex_lock(&m_lock);
+    mutex_lock shutdown_lock(&m_shutdown_lock);
 
     if( m_started == false )
     {
-	pthread_mutex_unlock(&m_lock);
-	pthread_mutex_unlock(&m_shutdown_lock);
-	return;
+	return 0;
     }
 
     shutdown_task kill_task_runner;
-
-    try
+    if( queue_task_wait(&kill_task_runner) )
     {
-	priv_queue_task(&kill_task_runner);
-    }
-    catch(...)
-    {
-	pthread_mutex_unlock(&m_lock);
-	pthread_mutex_unlock(&m_shutdown_lock);
-	throw;
+	// there was an error waiting for the kill task, abort the
+	// cleanup
+	return 1;
     }
 
-    // at this point, kill_task_runner is in the back of the list
-    priv_wait_for_task(m_tasks.back());
-
-    // At this point, m_lock is unlocked and the task runner should be
-    // waiting on the shutdown lock in it's cancelation routine
+    // At this point, the task runner should be waiting on the
+    // shutdown lock in its cancelation routine
     while( m_started == true )
     {
 	pthread_cond_wait(&m_shutdown_cond, &m_shutdown_lock);
     }
 
-    pthread_mutex_unlock(&m_shutdown_lock);
+    return 0;
 }
 
-void task_queue::priv_queue_task(itask * const task)
+bool task_queue::priv_queue_task(itask * const task)
 {
     // a task can only be scheduled once
     if( find(m_tasks.begin(), m_tasks.end(), task) == m_tasks.end() )
     {
 	m_tasks.push_back(task_desc(task));
 
-	// task was empty signal the task runner
+	// task queue was empty signal the task runner
 	if( m_tasks.size() == 1 )
 	{
 	    pthread_cond_signal(&m_cond);
 	}
+
+	return true;
     }
+
+    return false;
 }
 
 void task_queue::queue_task(itask * const task)
@@ -165,33 +225,52 @@ void task_queue::queue_task(itask * const task)
     priv_queue_task(task);
 }
 
-int task_queue::cancel_task(itask * const task)
+int task_queue::queue_task_wait(itask * const task)
+{
+    int rc = 0;
+
+    mutex_lock lock(&m_lock);
+
+    // task was not allready queued
+    if( priv_queue_task(task ) == true )
+    {	
+	rc = priv_wait_for_task(m_tasks.back());
+	if( rc != 0 )
+	{
+	    // An error occured while trying to wait on the task, so
+	    // remove the task from the queue and forward the error
+	    m_tasks.pop_back();
+	    return rc;
+	}
+    }
+
+    return rc;
+}
+
+int task_queue::cancel_task(itask * const task, bool& cancel_status)
 {
     int rc = 0;
     mutex_lock lock(&m_lock);
 
     if( m_tasks.front() == task )
     {
-	// this condition means either the task runner has not
-	// started processing this task, or has unlocked m_lock and is
-	// about to run the task.  So we can't erase the task from the
-	// list.
+	// Being here means either the task runner has not started
+	// processing this task, or has unlocked m_lock and is about
+	// to run the task.  So we can't erase the task from the list.
+	rc = priv_wait_for_task(m_tasks.front());
 
-	// cancel the lock because wait_for_task will unlock it properly
-	lock.cancel();
-
-	task_desc td = m_tasks.front();
-	rc = td.wait_for_task(&m_lock);
+	cancel_status = false;
     }
     else
     {
 	rc = 0;
-	// This condition means that the task runner is not processing
+	// Being here means that the task runner is not processing
 	// this task, so we want to signal any waiters and erase the
 	// task from the list.
 	list<task_desc>::iterator canceled_task = find(m_tasks.begin(),
 						       m_tasks.end(),
 						       task);
+	cancel_status = true;
 
 	if( canceled_task != m_tasks.end() )
 	{
@@ -203,13 +282,14 @@ int task_queue::cancel_task(itask * const task)
     return rc;
 }
 
-int task_queue::priv_wait_for_task(const task_desc& desc)
+int task_queue::priv_wait_for_task(task_desc& td)
 {
-    task_desc my_desc = desc;
-    return my_desc.wait_for_task(&m_lock);
+    wait_desc desc(&m_lock);
+    td.add_to_waitlist(&desc);
+    return desc.wait_for_task();
 }
 
-int task_queue::priv_wait_for_task(itask * const task, mutex_lock& lock)
+int task_queue::priv_wait_for_task(itask * const task)
 {
     int rc = 0;
 
@@ -219,9 +299,6 @@ int task_queue::priv_wait_for_task(itask * const task, mutex_lock& lock)
 
     if( req_task != m_tasks.end() )
     {
-	lock.cancel();
-
-	// wait_for_task will properly unlock the lock
 	rc = priv_wait_for_task(*req_task);
     }
 
@@ -231,7 +308,7 @@ int task_queue::priv_wait_for_task(itask * const task, mutex_lock& lock)
 int task_queue::wait_for_task(itask * const task)
 {
     mutex_lock lock(&m_lock);
-    return priv_wait_for_task(task, lock);
+    return priv_wait_for_task(task);
 }
 
 void* task_queue::task_runner(void* tqueue)
@@ -259,7 +336,9 @@ void* task_queue::task_runner(void* tqueue)
 
     pthread_mutex_lock(&queue->m_lock);
 
-    pthread_cleanup_push(task_queue::handle_cancelation, queue);
+    // during stack unwinding, this object will cleanup the task
+    // runner thread
+    task_runner_cleanup cleanup(queue);
 
     do
     {
@@ -268,34 +347,24 @@ void* task_queue::task_runner(void* tqueue)
 	 *
 	 * From the pthread_mutex_lock at the top of this function.
 	 *
-	 * From the pthread_mutex_lock at the end of the if statement.
+	 * From the pthread_mutex_lock inside the task_handle destructor
 	 *
 	 * From the return of pthread_cond_wait in the else statement.
 	 */
 	if( queue->m_tasks.empty() == false )
 	{
-	    task_desc task = queue->m_tasks.front();
-
-	    // set the cancel state to disable to prevent any tasks
-	    // invoking the cancelation routines in an untimely manner
-	    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-
 	    pthread_mutex_unlock(&queue->m_lock);
 
-	    task.run_task();
-
-	    pthread_mutex_lock(&queue->m_lock);
-
-	    queue->m_tasks.pop_front();
-
-	    // After the unlock above, there could be threads waiting
-	    // for this task, so signal them.
-	    task.signal_finished();
-
-	    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-
-	    // check if there are any pending cancelations
-	    pthread_testcancel();
+	    try
+	    {
+		task_handle task(queue);
+		task.run_task();
+	    }
+	    catch (const shutdown_exception& ex)
+	    {
+		// we need to shutdown
+		pthread_exit(NULL);
+	    }
 
 	    // give the waiting threads a chance to run
 	    pthread_mutex_unlock(&queue->m_lock);
@@ -308,20 +377,4 @@ void* task_queue::task_runner(void* tqueue)
 	}
 
     } while ( true );
-
-    pthread_cleanup_pop(1);
-    pthread_exit(NULL);
-}
-
-void task_queue::handle_cancelation(void* tqueue)
-{
-    task_queue* queue = static_cast<task_queue*>(tqueue);
-
-    pthread_mutex_unlock(&queue->m_lock);
-    pthread_mutex_lock(&queue->m_shutdown_lock);
-
-    queue->m_started = false;
-
-    pthread_cond_broadcast(&queue->m_shutdown_cond);
-    pthread_mutex_unlock(&queue->m_shutdown_lock);
 }

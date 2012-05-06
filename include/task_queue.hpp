@@ -9,21 +9,25 @@
 namespace libtq
 {
     class itask;
-    class mutex_lock;
+    class task_handle;
+    class task_runner_cleanup;
 
     class task_queue
     {
+	friend class task_handle;
+	friend class task_runner_cleanup;
+
 	public:
 
 	task_queue();
 	~task_queue();
 
-	bool start_queue();
-	void stop_queue();
+	int start_queue();
+	int stop_queue();
 
 	void queue_task(itask * const task);
 	int wait_for_task(itask * const task);
-	int cancel_task(itask * const task);
+	int cancel_task(itask * const task, bool& cancel_status);
 
 	private:
 
@@ -35,12 +39,32 @@ namespace libtq
 	pthread_cond_t m_shutdown_cond;
 	pthread_t m_thread;
 
-	// assumes m_lock is held prior to being called
-	void priv_queue_task(itask * const task);
+	/** Queues and waits for a task atomically
+	 *
+	 *  The task is queued and then waited on.  If the task was
+	 *  already queued, then it's not waited on.  So callers
+	 *  should make sure the task is not already queued prior to
+	 *  calling this function.
+	 *
+	 *  @return zero if the task was allready queued, or if the
+	 *  task was queued, and the wait succeeded.  Non-zero if an
+	 *  error occured while trying to wait on the task.
+	 */
+	int queue_task_wait(itask * const task);
+
+	/** Queues a task
+	 *
+	 *  @return true if the task was queued, false otherwise
+	 *
+	 *  @notes Assumes m_lock is held prior to being called
+	 */
+	bool priv_queue_task(itask * const task);
 
 	// assumes m_lock is held prior to being called
-	int priv_wait_for_task(itask* const task, mutex_lock& lock);
-	int priv_wait_for_task(const task_desc& desc);
+	int priv_wait_for_task(itask* const task);
+
+	// assumes m_lock is held prior to being called
+	int priv_wait_for_task(task_desc& desc);
 
 	static void* task_runner(void* task_queue);
 	static void handle_cancelation(void* task_queue);
