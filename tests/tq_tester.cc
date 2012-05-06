@@ -9,19 +9,23 @@ using namespace libtq;
 
 task_queue queue;
 
+// predicate the threads use to determine if they need to be stopped
+bool stop_threads;
+
+// lock for the stop_threads predicate
+pthread_mutex_t stop_threads_lock;
+
+// waits for input to stop the tester
+pthread_t stop_thread;
+
+// starts and stops the queue
+pthread_t queue_thread;
+
+// sends signals to all the threads
+pthread_t signal_thread;
+
 void* stop_handler(void*)
 {
-    sigset_t sigmask;
-
-    sigfillset(&sigmask);
-
-    // block all signals
-    if( pthread_sigmask(SIG_BLOCK, &sigmask, NULL) )
-    {
-	cerr << "error blocking signals in stop_handle\n";
-	pthread_exit(NULL);
-    }
-
     cout << "press enter to stop test: ";
     char input;
     cin.get(input);
@@ -30,21 +34,13 @@ void* stop_handler(void*)
     pthread_exit(NULL);
 }
 
-void queue_handler_cancel(void* p)
-{
-    cout << "queue_handler canceled\n";
-}
-
-bool exit_queue_handler;
-pthread_mutex_t exit_queue_handler_lock;
-
 void* queue_handler(void* q)
 {
     task_queue* queue = static_cast<task_queue*>(q);
 
-    pthread_mutex_lock(&exit_queue_handler_lock);
+    pthread_mutex_lock(&stop_threads_lock);
 
-    while ( exit_queue_handler == false )
+    while ( stop_threads == false )
     {
 	if( queue->start_queue() )
 	{
@@ -52,7 +48,7 @@ void* queue_handler(void* q)
 	    break;
 	}
 
-	pthread_mutex_unlock(&exit_queue_handler_lock);
+	pthread_mutex_unlock(&stop_threads_lock);
 	pthread_yield();
 
 	if( queue->stop_queue() )
@@ -61,20 +57,18 @@ void* queue_handler(void* q)
 	    pthread_exit(NULL);
 	}
 
-	pthread_mutex_lock(&exit_queue_handler_lock);
+	pthread_mutex_lock(&stop_threads_lock);
     }
 
-    pthread_mutex_unlock(&exit_queue_handler_lock);
+    pthread_mutex_unlock(&stop_threads_lock);
     pthread_exit(NULL);
 }
 
 int main()
 {
     int rc = 0;
-    pthread_t stop_thread;
-    pthread_t queue_thread;
 
-    pthread_mutex_init(&exit_queue_handler_lock, NULL);
+    pthread_mutex_init(&stop_threads_lock, NULL);
     queue.start_queue();
 
     if( pthread_create(&stop_thread, NULL, stop_handler, NULL) )
@@ -95,9 +89,9 @@ int main()
     pthread_join(stop_thread, NULL);
 
     // shutdown the queue thread
-    pthread_mutex_lock(&exit_queue_handler_lock);
-    exit_queue_handler = true;
-    pthread_mutex_unlock(&exit_queue_handler_lock);
+    pthread_mutex_lock(&stop_threads_lock);
+    stop_threads = true;
+    pthread_mutex_unlock(&stop_threads_lock);
 
     cout << "joining the queue thread\n";
     pthread_join(queue_thread, NULL);

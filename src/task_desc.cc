@@ -56,35 +56,13 @@ void wait_desc::remove_from_waitlist()
 
 int wait_desc::wait_for_task()
 {
-    sigset_t signal_mask, old_sigmask;
-    int rc;
-
-    // block all signals on this thread so that the thread can
-    // properly clean up its resources
-    rc = sigfillset(&signal_mask);
-
-    if( rc != 0 )
-    {
-	return rc;
-    }
-
-    rc = pthread_sigmask(SIG_BLOCK, &signal_mask, &old_sigmask);
-
-    if( rc != 0 )
-    {
-	return rc;
-    }
-
     // we wait in a while loop because of spurious wakeups
     while( finished == false )
     {
 	pthread_cond_wait(&condition, mutex);
     }
 
-    // restore the signal mask
-    rc = pthread_sigmask(SIG_BLOCK, &old_sigmask, NULL);
-
-    return rc;
+    return 0;
 }
 
 task_desc::task_desc(itask* task):

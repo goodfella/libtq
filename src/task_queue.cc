@@ -313,26 +313,7 @@ int task_queue::wait_for_task(itask * const task)
 
 void* task_queue::task_runner(void* tqueue)
 {
-    sigset_t signal_mask;
-    int rc = 0;
-
     task_queue * queue = static_cast<task_queue*>(tqueue);
-
-    // block all signals on this thread so that the thread can
-    // properly clean up its resources
-
-    rc = sigfillset(&signal_mask);
-    if( rc != 0 )
-    {
-	pthread_exit(NULL);
-    }
-
-    rc = pthread_sigmask(SIG_BLOCK, &signal_mask, NULL);
-    
-    if( rc != 0 )
-    {
-	pthread_exit(NULL);
-    }
 
     pthread_mutex_lock(&queue->m_lock);
 
