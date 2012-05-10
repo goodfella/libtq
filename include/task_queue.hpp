@@ -84,6 +84,7 @@ namespace libtq
 	 *  task, failed.
 	 */
 	int cancel_task(itask * const task, bool& cancel_status);
+	int cancel_task(itask * const task);
 
 	private:
 
@@ -141,6 +142,11 @@ namespace libtq
 
 	// assumes m_lock is held prior to being called
 	int priv_wait_for_task(task_desc& desc);
+
+	int cancel_task(itask * const task, bool* cancel_status);
+
+	// searches for a task, and cancels it assumes m_lock is held
+	void priv_cancel_task(itask * const task, bool* cancel_status);
 
 	static void* task_runner(void* task_queue);
     };

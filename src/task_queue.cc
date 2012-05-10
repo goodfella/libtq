@@ -249,37 +249,92 @@ int task_queue::queue_task_wait(itask * const task)
 
 int task_queue::cancel_task(itask * const task, bool& cancel_status)
 {
-    int rc = 0;
+    return cancel_task(task, &cancel_status);
+}
+
+int task_queue::cancel_task(itask * const task)
+{
+    return cancel_task(task, NULL);
+}
+
+void task_queue::priv_cancel_task(itask * const task, bool* cancel_status)
+{
+    list<task_desc>::iterator canceled_task = find(m_tasks.begin(), m_tasks.end(),
+						   task);
+
+    if( canceled_task != m_tasks.end() )
+    {
+	canceled_task->signal_finished();
+	m_tasks.erase(canceled_task);
+
+	if( cancel_status != NULL )
+	{
+	    *cancel_status = true;
+	}
+    }
+    else
+    {
+	if( cancel_status != NULL )
+	{
+	    *cancel_status = false;
+	}
+    }
+}
+
+int task_queue::cancel_task(itask * const task, bool* cancel_status)
+{
+    {
+	// we have an extra scope here, so the shutdown lock gets
+	// released, if the queue is started
+	mutex_lock shutdown_lock(&m_shutdown_lock);
+
+	if( m_started == false )
+	{
+	    // queue is stopped, so any task can be removed even the front task
+	    mutex_lock lock(&m_lock);
+	    priv_cancel_task(task, cancel_status);
+	    return 0;
+	}
+    }
+
     mutex_lock lock(&m_lock);
+
+    // the task queue is not stopped, so there's more work to do
+
+    if( m_tasks.empty() == true )
+    {
+	// queue is empty, so there's nothing to cancel
+	if( cancel_status != NULL )
+	{
+	    *cancel_status = false;
+	}
+
+	return 0;
+    }
 
     if( m_tasks.front() == task )
     {
 	// Being here means either the task runner has not started
 	// processing this task, or has unlocked m_lock and is about
-	// to run the task.  So we can't erase the task from the list.
-	rc = priv_wait_for_task(m_tasks.front());
+	// to run the task.  So we can't cancel the task.
 
-	cancel_status = false;
+	if( cancel_status != NULL )
+	{
+	    *cancel_status = false;
+	}
+
+	return priv_wait_for_task(m_tasks.front());
     }
     else
     {
-	rc = 0;
 	// Being here means that the task runner is not processing
 	// this task, so we want to signal any waiters and erase the
 	// task from the list.
-	list<task_desc>::iterator canceled_task = find(m_tasks.begin(),
-						       m_tasks.end(),
-						       task);
-	cancel_status = true;
-
-	if( canceled_task != m_tasks.end() )
-	{
-	    canceled_task->signal_finished();
-	    m_tasks.erase(canceled_task);
-	}
+	priv_cancel_task(task, cancel_status);
+	return 0;
     }
-    
-    return rc;
+
+    return 0;
 }
 
 int task_queue::priv_wait_for_task(task_desc& td)
