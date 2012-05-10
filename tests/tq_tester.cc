@@ -19,6 +19,7 @@ class task : public itask
 
     void run();
     const unsigned long runcount() const;
+    const unsigned long cancelcount() const;
     void inc_waitcount();
     void inc_cancelcount();
 
@@ -71,6 +72,11 @@ const unsigned long task::counter(const unsigned long& counter) const
 const unsigned long task::runcount() const
 {
     return counter(m_runcount);
+}
+
+const unsigned long task::cancelcount() const
+{
+    return counter(m_cancelcount);
 }
 
 void task::inc_waitcount()
@@ -152,14 +158,16 @@ class task_thread_manager
 {
     public:
 
-    task_thread_manager(task* taskp, task_queue * const queue);
+    task_thread_manager(task_queue * const queue);
     ~task_thread_manager();
 
     void start_threads();
     void stop_threads();
+    const task& get_task() const;
 
     private:
 
+    task m_task;
     bool_flag m_stop_threads;
     task_thread_data m_desc;
 
@@ -179,8 +187,8 @@ class task_thread_manager
     static void* task_wait_handler(void* task);
 };
 
-task_thread_manager::task_thread_manager(task* taskp, task_queue * const queue):
-    m_desc(taskp, queue, &m_stop_threads),
+task_thread_manager::task_thread_manager(task_queue * const queue):
+    m_desc(&m_task, queue, &m_stop_threads),
     m_sch_started(false),
     m_sch_wait_started(false),
     m_cancel_started(false),
@@ -262,6 +270,11 @@ void task_thread_manager::stop_threads()
 task_thread_manager::~task_thread_manager()
 {
     stop_threads();
+}
+
+const task& task_thread_manager::get_task() const
+{
+    return m_task;
 }
 
 void* task_thread_manager::task_sch_handler(void* t)
@@ -407,18 +420,24 @@ void* queue_thread_manager::queue_thread(void* q)
     pthread_exit(NULL);
 }
 
+void print_stats(char const * const label, const task_thread_manager& task_threads)
+{
+    cout << label << " run count = " << task_threads.get_task().runcount() << endl
+	 << label << " cancel count = " << task_threads.get_task().cancelcount() << endl << endl;
+}
+
 int main()
 {
     task_queue queue;
 
-    task task1;
-    task task2;
-
     try
     {
 	queue_thread_manager queue_thread(&queue);
-	task_thread_manager task1_threads(&task1, &queue);
 
+	task_thread_manager task1_threads(&queue);
+	task_thread_manager task2_threads(&queue);
+
+	task2_threads.start_threads();
 	task1_threads.start_threads();
 	queue_thread.start_thread();
 	
@@ -431,8 +450,11 @@ int main()
 
 	// stops and joins on all the task threads
 	task1_threads.stop_threads();
+	task2_threads.stop_threads();
 
-	cout << "task 1 run count = " << task1.runcount() << endl;
+	print_stats("task 1", task1_threads);
+	print_stats("task 2", task2_threads);
+
 	cout << "exiting program\n";
     }
     catch(std::runtime_error& ex)
