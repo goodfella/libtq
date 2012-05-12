@@ -83,6 +83,10 @@ namespace libtq
 	// Predicate used to determine if the task runner thread is
 	bool m_started;
 
+	// Predicate used to insure only one thread goes through the
+	// entire stop_queue routine
+	bool m_shutdown_pending;
+
 	// List of tasks to run
 	std::list<task_desc> m_tasks;
 
@@ -137,6 +141,10 @@ namespace libtq
 
 	// searches for a task, and cancels it assumes m_lock is held
 	bool priv_cancel_task(itask * const task);
+
+	// waits for the task runner to signal that it's shutdown,
+	// assumes m_shutdown_lock is held prior to being called
+	void wait_for_task_runner();
 
 	static void* task_runner(void* task_queue);
     };

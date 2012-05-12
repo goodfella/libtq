@@ -135,7 +135,8 @@ void mutex_lock::lock(pthread_mutex_t* lock)
 }
 
 task_queue::task_queue():
-    m_started(false)
+    m_started(false),
+    m_shutdown_pending(false)
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_mutex_init(&m_shutdown_lock, NULL);
@@ -173,6 +174,16 @@ int task_queue::start_queue()
     return start_ret;
 }
 
+void task_queue::wait_for_task_runner()
+{
+    // At this point, the task runner should be waiting on the
+    // shutdown lock in its cancelation routine
+    while( m_started == true )
+    {
+	pthread_cond_wait(&m_shutdown_cond, &m_shutdown_lock);
+    }
+}
+
 int task_queue::stop_queue()
 {
     mutex_lock shutdown_lock(&m_shutdown_lock);
@@ -182,6 +193,16 @@ int task_queue::stop_queue()
 	return 0;
     }
 
+    // Another thread is shutting down the task runner, so just wait
+    // until the task runner signals it's done
+    if( m_shutdown_pending == true )
+    {
+	wait_for_task_runner();
+	return 0;
+    }
+
+    m_shutdown_pending = true;
+
     shutdown_task kill_task_runner;
     if( queue_task_wait(&kill_task_runner) )
     {
@@ -190,12 +211,11 @@ int task_queue::stop_queue()
 	return 1;
     }
 
-    // At this point, the task runner should be waiting on the
-    // shutdown lock in its cancelation routine
-    while( m_started == true )
-    {
-	pthread_cond_wait(&m_shutdown_cond, &m_shutdown_lock);
-    }
+    // Wait for the task runner to finish, and reset the shutdown
+    // pending flag.  Note that the pthread_cond_wait in
+    // wait_for_task_runner will unlock the m_shutdown_lock mutex
+    wait_for_task_runner();
+    m_shutdown_pending = false;
 
     return 0;
 }
