@@ -5,6 +5,7 @@ ADD_DEFINITIONS(-g -Wall -Werror)
 
 ADD_EXECUTABLE(tq-tester
   tq_tester.cc
+  task_manager.cc
   task_thread_manager.cc
   task.cc
   queue_thread_manager.cc

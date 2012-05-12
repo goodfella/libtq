@@ -2,14 +2,11 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <string>
-#include <algorithm>
-#include <functional>
 #include <stdexcept>
 
 #include "task_queue.hpp"
-#include "task_thread_manager.hpp"
 #include "queue_thread_manager.hpp"
+#include "task_manager.hpp"
 
 using namespace std;
 using namespace libtq;
@@ -33,23 +30,19 @@ int main(int argc, char** argv)
 	return 1;
     }
 
-    vector<task_thread_manager*> task_threads;
-
     try
     {
+	task_manager tasks(&queue);
 	queue_thread_manager queue_thread(&queue);
 
 	for( int i = 1; i <= num_task_threads; ++i)
 	{
 	    stringstream ss;
 	    ss << "task " << i;
-	    task_threads.push_back(new task_thread_manager(ss.str(), &queue));
+	    tasks.add_task(ss.str());
 	}
 
-	// start each thread
-	for_each(task_threads.begin(), task_threads.end(),
-		 mem_fun(&task_thread_manager::start_threads));
-
+	tasks.start_tasks();
 	queue_thread.start_thread();
 	
 	cout << "press enter to stop test: ";
@@ -60,24 +53,13 @@ int main(int argc, char** argv)
 	queue_thread.stop_thread();
 
 	// stops and joins on all the task threads
-	for_each(task_threads.begin(), task_threads.end(),
-		 mem_fun(&task_thread_manager::stop_threads));
-
-	// prints the thread stats
-	for_each(task_threads.begin(), task_threads.end(),
-		 mem_fun(&task_thread_manager::print_stats));
+	tasks.stop_tasks();
+	tasks.print_stats();
 
 	cout << "exiting program\n";
     }
-    catch(std::runtime_error& ex)
+    catch(std::exception& ex)
     {
-	while( task_threads.empty() == false )
-	{
-	    // destroy all the task threads and remove them from teh list
-	    delete(task_threads.back());
-	    task_threads.pop_back();
-	}
-
 	cerr << ex.what() << endl;
 	return 1;
     }
