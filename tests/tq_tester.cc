@@ -415,11 +415,7 @@ void* queue_thread_manager::queue_thread(void* q)
 
 	pthread_yield();
 
-	if( queue->stop_queue() )
-	{
-	    cerr << "error stopping queue\n";
-	    pthread_exit(NULL);
-	}
+	queue->stop_queue();
     }
 
     pthread_exit(NULL);

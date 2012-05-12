@@ -18,7 +18,7 @@ namespace libtq
 	wait_desc();
 	~wait_desc();
 
-	int wait_for_task();
+	void wait_for_task();
 
 	private:
 
@@ -45,7 +45,7 @@ namespace libtq
 
 	task_desc(itask* task);
 
-	int wait_for_task(pthread_mutex_t* lock);
+	void wait_for_task(pthread_mutex_t* lock);
 	void signal_finished();
 	void run_task();
 

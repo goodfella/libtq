@@ -54,15 +54,13 @@ void wait_desc::remove_from_waitlist()
     prev->next = next;
 }
 
-int wait_desc::wait_for_task()
+void wait_desc::wait_for_task()
 {
     // we wait in a while loop because of spurious wakeups
     while( finished == false )
     {
 	pthread_cond_wait(&condition, mutex);
     }
-
-    return 0;
 }
 
 task_desc::task_desc(itask* task):

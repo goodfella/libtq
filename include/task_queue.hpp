@@ -33,11 +33,8 @@ namespace libtq
 	 *
 	 *  The calling thread will block until the task runner has
 	 *  been shut down successfully.
-	 *
-	 *  @return zero if the task runner thread was successfully
-	 *  shutdown, non-zero if it was not shut down.
 	 */
-	int stop_queue();
+	void stop_queue();
 
 	/** Queues a task
 	 *
@@ -53,11 +50,9 @@ namespace libtq
 	 *  completes.  If the task is not already queued, this
 	 *  function exits immediately.
 	 *
-	 *  @return zero if the wait was succesfull, or if the task
-	 *  was not already queued.  Non-zero, if the task was queued,
-	 *  and the wait failed.
+	 *  @return true if the task was waited on, false otherwise
 	 */
-	int wait_for_task(itask * const task);
+	bool wait_for_task(itask * const task);
 
 	/** Cancels the execution of a task
 	 *
@@ -114,16 +109,14 @@ namespace libtq
 	/** Queues and waits for a task atomically
 	 *
 	 *  The task is queued and then waited on.  If the task was
-	 *  already queued, then it's not waited on.  So callers
-	 *  should make sure the task is not already queued prior to
-	 *  calling this function otherwise, the return value is
-	 *  ambiguous.
+	 *  already queued prior to calling this function, then it's
+	 *  not waited on.  So callers should make sure the task is
+	 *  not already queued prior to calling this function.
 	 *
-	 *  @return zero if the task was allready queued, or if the
-	 *  task was queued, and the wait succeeded.  Non-zero if an
-	 *  error occured while trying to wait on the task.
+	 *  @return true if the task was queued, false if the task was
+	 *  already queued prior to calling this function.
 	 */
-	int queue_task_wait(itask * const task);
+	bool queue_task_wait(itask * const task);
 
 	/** Queues a task
 	 *
@@ -133,11 +126,12 @@ namespace libtq
 	 */
 	bool priv_queue_task(itask * const task);
 
-	// assumes m_lock is held prior to being called
-	int priv_wait_for_task(itask* const task);
+	// Searches for the task and waits on it if it's queued.
+	// Assumes m_lock is held prior to being called
+	bool priv_wait_for_task(itask* const task);
 
-	// assumes m_lock is held prior to being called
-	int priv_wait_for_task(task_desc& desc);
+	// Waits on the task passed in, assumes m_lock is held
+	void priv_wait_for_task(task_desc& desc);
 
 	// searches for a task, and cancels it assumes m_lock is held
 	bool priv_cancel_task(itask * const task);

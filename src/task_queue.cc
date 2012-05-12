@@ -184,13 +184,13 @@ void task_queue::wait_for_task_runner()
     }
 }
 
-int task_queue::stop_queue()
+void task_queue::stop_queue()
 {
     mutex_lock shutdown_lock(&m_shutdown_lock);
 
     if( m_started == false )
     {
-	return 0;
+	return;
     }
 
     // Another thread is shutting down the task runner, so just wait
@@ -198,26 +198,21 @@ int task_queue::stop_queue()
     if( m_shutdown_pending == true )
     {
 	wait_for_task_runner();
-	return 0;
+	return;
     }
 
     m_shutdown_pending = true;
 
     shutdown_task kill_task_runner;
-    if( queue_task_wait(&kill_task_runner) )
-    {
-	// there was an error waiting for the kill task, abort the
-	// cleanup
-	return 1;
-    }
+
+    // queue and wait for the shutdown task to finish
+    queue_task_wait(&kill_task_runner);
 
     // Wait for the task runner to finish, and reset the shutdown
     // pending flag.  Note that the pthread_cond_wait in
     // wait_for_task_runner will unlock the m_shutdown_lock mutex
     wait_for_task_runner();
     m_shutdown_pending = false;
-
-    return 0;
 }
 
 bool task_queue::priv_queue_task(itask * const task)
@@ -245,26 +240,18 @@ void task_queue::queue_task(itask * const task)
     priv_queue_task(task);
 }
 
-int task_queue::queue_task_wait(itask * const task)
+bool task_queue::queue_task_wait(itask * const task)
 {
-    int rc = 0;
-
     mutex_lock lock(&m_lock);
 
-    // task was not allready queued
     if( priv_queue_task(task ) == true )
     {	
-	rc = priv_wait_for_task(m_tasks.back());
-	if( rc != 0 )
-	{
-	    // An error occured while trying to wait on the task, so
-	    // remove the task from the queue and forward the error
-	    m_tasks.pop_back();
-	    return rc;
-	}
+	// Here, the task was not allready queued so we can wait on it
+	priv_wait_for_task(m_tasks.back());
+	return true;
     }
 
-    return rc;
+    return false;
 }
 
 bool task_queue::priv_cancel_task(itask * const task)
@@ -274,6 +261,8 @@ bool task_queue::priv_cancel_task(itask * const task)
 
     if( canceled_task != m_tasks.end() )
     {
+	// The task was scheduled, so signal any waiters, and remove
+	// the task from the queue
 	canceled_task->signal_finished();
 	m_tasks.erase(canceled_task);
 
@@ -281,6 +270,7 @@ bool task_queue::priv_cancel_task(itask * const task)
     }
     else
     {
+	// The task was not scheduled, so there's nothing to do
 	return false;
     }
 }
@@ -326,30 +316,29 @@ bool task_queue::cancel_task(itask * const task)
     }
 }
 
-int task_queue::priv_wait_for_task(task_desc& td)
+void task_queue::priv_wait_for_task(task_desc& td)
 {
     wait_desc desc(&m_lock);
     td.add_to_waitlist(&desc);
-    return desc.wait_for_task();
+    desc.wait_for_task();
 }
 
-int task_queue::priv_wait_for_task(itask * const task)
+bool task_queue::priv_wait_for_task(itask * const task)
 {
-    int rc = 0;
-
     list<task_desc>::iterator req_task = find(m_tasks.begin(),
 					      m_tasks.end(),
 					      task);
 
     if( req_task != m_tasks.end() )
     {
-	rc = priv_wait_for_task(*req_task);
+	priv_wait_for_task(*req_task);
+	return true;
     }
 
-    return rc;
+    return false;
 }
 
-int task_queue::wait_for_task(itask * const task)
+bool task_queue::wait_for_task(itask * const task)
 {
     mutex_lock lock(&m_lock);
     return priv_wait_for_task(task);
