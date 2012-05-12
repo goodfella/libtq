@@ -1,0 +1,5 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(tq-tester CXX)
+ADD_DEFINITIONS(-g -Wall -Werror)
+ADD_EXECUTABLE(tq-tester tq_tester.cc)
+TARGET_LINK_LIBRARIES(tq-tester tq pthread)

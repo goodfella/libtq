@@ -9,7 +9,4 @@ ADD_LIBRARY(tq
   src/task_queue.cc
   src/task_desc.cc)
 
-ADD_EXECUTABLE(tq-tester tests/tq_tester.cc)
-
-TARGET_LINK_LIBRARIES(tq)
-TARGET_LINK_LIBRARIES(tq-tester tq pthread)
+ADD_SUBDIRECTORY(tests/tq-tester)
