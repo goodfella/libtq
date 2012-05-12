@@ -72,19 +72,11 @@ namespace libtq
 	 *  this function works just like wait_for_task i.e. the
 	 *  calling thread blocks until the task execution completes.
 	 *
-	 *  @param cancel_status Set to true if the task was canceled
-	 *  and will not execute.  Set to false if the task was not
-	 *  canceled i.e. the task runner is preparing to run the
-	 *  task.
-	 *
-	 *  @return Zero if the required wait, due to the task runner
-	 *  preparing to run the task succeeded, or if the task runner
-	 *  was not preparing to run the task.  Non-zero if the
-	 *  required wait, due to the task runner preparing to run the
-	 *  task, failed.
+	 *  @return true if the task was canceled, false if the task
+	 *  was not canceled either because the task was not queued,
+	 *  or because the task was pending.
 	 */
-	int cancel_task(itask * const task, bool& cancel_status);
-	int cancel_task(itask * const task);
+	bool cancel_task(itask * const task);
 
 	private:
 
@@ -143,10 +135,8 @@ namespace libtq
 	// assumes m_lock is held prior to being called
 	int priv_wait_for_task(task_desc& desc);
 
-	int cancel_task(itask * const task, bool* cancel_status);
-
 	// searches for a task, and cancels it assumes m_lock is held
-	void priv_cancel_task(itask * const task, bool* cancel_status);
+	bool priv_cancel_task(itask * const task);
 
 	static void* task_runner(void* task_queue);
     };

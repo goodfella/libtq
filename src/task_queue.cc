@@ -247,17 +247,7 @@ int task_queue::queue_task_wait(itask * const task)
     return rc;
 }
 
-int task_queue::cancel_task(itask * const task, bool& cancel_status)
-{
-    return cancel_task(task, &cancel_status);
-}
-
-int task_queue::cancel_task(itask * const task)
-{
-    return cancel_task(task, NULL);
-}
-
-void task_queue::priv_cancel_task(itask * const task, bool* cancel_status)
+bool task_queue::priv_cancel_task(itask * const task)
 {
     list<task_desc>::iterator canceled_task = find(m_tasks.begin(), m_tasks.end(),
 						   task);
@@ -267,21 +257,15 @@ void task_queue::priv_cancel_task(itask * const task, bool* cancel_status)
 	canceled_task->signal_finished();
 	m_tasks.erase(canceled_task);
 
-	if( cancel_status != NULL )
-	{
-	    *cancel_status = true;
-	}
+	return true;
     }
     else
     {
-	if( cancel_status != NULL )
-	{
-	    *cancel_status = false;
-	}
+	return false;
     }
 }
 
-int task_queue::cancel_task(itask * const task, bool* cancel_status)
+bool task_queue::cancel_task(itask * const task)
 {
     {
 	// we have an extra scope here, so the shutdown lock gets
@@ -292,8 +276,7 @@ int task_queue::cancel_task(itask * const task, bool* cancel_status)
 	{
 	    // queue is stopped, so any task can be removed even the front task
 	    mutex_lock lock(&m_lock);
-	    priv_cancel_task(task, cancel_status);
-	    return 0;
+	    return priv_cancel_task(task);
 	}
     }
 
@@ -303,38 +286,24 @@ int task_queue::cancel_task(itask * const task, bool* cancel_status)
 
     if( m_tasks.empty() == true )
     {
-	// queue is empty, so there's nothing to cancel
-	if( cancel_status != NULL )
-	{
-	    *cancel_status = false;
-	}
-
-	return 0;
+	return false;
     }
-
-    if( m_tasks.front() == task )
+    else if( m_tasks.front() == task )
     {
 	// Being here means either the task runner has not started
 	// processing this task, or has unlocked m_lock and is about
 	// to run the task.  So we can't cancel the task.
 
-	if( cancel_status != NULL )
-	{
-	    *cancel_status = false;
-	}
-
-	return priv_wait_for_task(m_tasks.front());
+	priv_wait_for_task(m_tasks.front());
+	return false;
     }
     else
     {
 	// Being here means that the task runner is not processing
 	// this task, so we want to signal any waiters and erase the
 	// task from the list.
-	priv_cancel_task(task, cancel_status);
-	return 0;
+	return priv_cancel_task(task);
     }
-
-    return 0;
 }
 
 int task_queue::priv_wait_for_task(task_desc& td)
@@ -393,6 +362,10 @@ void* task_queue::task_runner(void* tqueue)
 
 	    try
 	    {
+		// task_handle's destructor acquires the queue's
+		// m_lock, signals the waiters, and removes the task
+		// from the list.  The destructor returns with m_lock
+		// held.
 		task_handle task(queue);
 		task.run_task();
 	    }
