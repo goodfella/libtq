@@ -381,7 +381,7 @@ void* task_queue::task_runner(void* tqueue)
 	    catch (const shutdown_exception& ex)
 	    {
 		// we need to shutdown
-		pthread_exit(NULL);
+		return NULL;
 	    }
 
 	    // give the waiting threads a chance to run
