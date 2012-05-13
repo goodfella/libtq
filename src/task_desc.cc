@@ -63,6 +63,18 @@ void wait_desc::wait_for_task()
     }
 }
 
+void wait_desc::signal_waiters()
+{
+    // signal all the waiters that the task is finished
+
+    wait_desc* desc;
+    for(desc = next; desc != this; desc = desc->next)
+    {
+	desc->finished = true;
+	pthread_cond_signal(&desc->condition);
+    }
+}
+
 task_desc::task_desc(itask* task):
     m_task(task)
 {}
@@ -79,11 +91,5 @@ void task_desc::add_to_waitlist(wait_desc* desc)
 
 void task_desc::signal_finished()
 {
-    // signal all the waiters that the task is finished
-    wait_desc* desc;
-    for(desc = m_waitlist.next; desc != &m_waitlist; desc = desc->next)
-    {
-	desc->finished = true;
-	pthread_cond_signal(&desc->condition);
-    }
+    m_waitlist.signal_waiters();
 }

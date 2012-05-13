@@ -6,25 +6,24 @@
 namespace libtq
 {
     class itask;
-    class task_desc;
 
     class wait_desc
     {
-	friend class task_desc;
-
 	public:
 
-	wait_desc(pthread_mutex_t* m);
+	explicit wait_desc(pthread_mutex_t* m);
 	wait_desc();
+	wait_desc(const wait_desc& wd);
+
 	~wait_desc();
 
+	void add_to_waitlist(wait_desc* waitlist);
 	void wait_for_task();
+	void signal_waiters();
 
 	private:
 
-	void add_to_waitlist(wait_desc* waitlist);
 	void remove_from_waitlist();
-	wait_desc(const wait_desc& wd);
 
 	// purposely not defined because it should never be used
 	wait_desc& operator=(const wait_desc& rhs);
