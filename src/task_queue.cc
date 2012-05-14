@@ -282,19 +282,6 @@ bool task_queue::priv_cancel_task(itask * const task)
 
 bool task_queue::cancel_task(itask * const task)
 {
-    {
-	// we have an extra scope here, so the shutdown lock gets
-	// released, if the queue is started
-	mutex_lock shutdown_lock(&m_shutdown_lock);
-
-	if( m_started == false )
-	{
-	    // queue is stopped, so any task can be removed even the front task
-	    mutex_lock lock(&m_lock);
-	    return priv_cancel_task(task);
-	}
-    }
-
     mutex_lock lock(&m_lock);
 
     if( m_tasks.empty() == true )
