@@ -7,60 +7,52 @@
 using namespace std;
 using namespace libtq;
 
-wait_desc::wait_desc(pthread_mutex_t* m):
-    mutex(m),
-    next(this),
-    prev(this),
-    finished(false)
-{
-    pthread_cond_init(&condition, NULL);
-}
-
 wait_desc::wait_desc():
-    mutex(NULL),
-    next(this),
-    prev(this),
-    finished(true)
+    m_next(this),
+    m_prev(this),
+    m_finished(false),
+    m_condition(NULL)
 {}
 
 wait_desc::wait_desc(const wait_desc& rhs):
-    mutex(NULL),
-    next(this),
-    prev(this),
-    finished(true)
+    m_next(this),
+    m_prev(this),
+    m_finished(false),
+    m_condition(NULL)
 {}
 
 wait_desc::~wait_desc()
 {
     remove_from_waitlist();
-
-    if( mutex != NULL )
-    {
-	pthread_cond_destroy(&condition);
-    }
 }
 
 void wait_desc::add_to_waitlist(wait_desc* wait_list)
 {
-    wait_list->next->prev = this;
-    next = wait_list->next;
-    prev = wait_list;
-    wait_list->next = this;
+    wait_list->m_next->m_prev = this;
+    m_next = wait_list->m_next;
+    m_prev = wait_list;
+    wait_list->m_next = this;
 }
 
 void wait_desc::remove_from_waitlist()
 {
-    next->prev = prev;
-    prev->next = next;
+    m_next->m_prev = m_prev;
+    m_prev->m_next = m_next;
 }
 
-void wait_desc::wait_for_task()
+void wait_desc::wait_for_task(pthread_mutex_t* mutex)
 {
+    pthread_cond_t condition;
+    pthread_cond_init(&condition, NULL);
+    m_condition = &condition;
+
     // we wait in a while loop because of spurious wakeups
-    while( finished == false )
+    while( m_finished == false )
     {
 	pthread_cond_wait(&condition, mutex);
     }
+
+    pthread_cond_destroy(&condition);
 }
 
 void wait_desc::signal_waiters()
@@ -68,10 +60,10 @@ void wait_desc::signal_waiters()
     // signal all the waiters that the task is finished
 
     wait_desc* desc;
-    for(desc = next; desc != this; desc = desc->next)
+    for(desc = m_next; desc != this; desc = desc->m_next)
     {
-	desc->finished = true;
-	pthread_cond_signal(&desc->condition);
+	desc->m_finished = true;
+	pthread_cond_signal(desc->m_condition);
     }
 }
 

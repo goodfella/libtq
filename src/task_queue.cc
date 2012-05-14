@@ -318,9 +318,9 @@ bool task_queue::cancel_task(itask * const task)
 
 void task_queue::priv_wait_for_task(task_desc& td)
 {
-    wait_desc desc(&m_lock);
+    wait_desc desc;
     td.add_to_waitlist(&desc);
-    desc.wait_for_task();
+    desc.wait_for_task(&m_lock);
 }
 
 bool task_queue::priv_wait_for_task(itask * const task)

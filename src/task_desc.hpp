@@ -18,7 +18,7 @@ namespace libtq
 	~wait_desc();
 
 	void add_to_waitlist(wait_desc* waitlist);
-	void wait_for_task();
+	void wait_for_task(pthread_mutex_t* mutex);
 	void signal_waiters();
 
 	private:
@@ -28,12 +28,11 @@ namespace libtq
 	// purposely not defined because it should never be used
 	wait_desc& operator=(const wait_desc& rhs);
 
-	pthread_mutex_t* mutex;
-	struct wait_desc* next;
-	struct wait_desc* prev;
+	struct wait_desc* m_next;
+	struct wait_desc* m_prev;
 
-	bool finished;
-	pthread_cond_t condition;
+	bool m_finished;
+	pthread_cond_t* m_condition;
     };
 
     /** Keeps track of all the waiters
