@@ -9,12 +9,10 @@
 namespace libtq
 {
     class itask;
-    class task_handle;
     class task_runner_cleanup;
 
     class task_queue
     {
-	friend class task_handle;
 	friend class task_runner_cleanup;
 
 	public:

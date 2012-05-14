@@ -18,12 +18,13 @@ namespace libtq
 	~wait_desc();
 
 	void add_to_waitlist(wait_desc* waitlist);
+	void remove_from_waitlist();
+	void replace_head(wait_desc* const new_head);
+
 	void wait_for_task(pthread_mutex_t* mutex);
 	void signal_waiters();
 
 	private:
-
-	void remove_from_waitlist();
 
 	// purposely not defined because it should never be used
 	wait_desc& operator=(const wait_desc& rhs);
@@ -41,13 +42,18 @@ namespace libtq
     {
 	public:
 
-	task_desc(itask* task);
+	task_desc();
+	explicit task_desc(itask* task);
 
-	void wait_for_task(pthread_mutex_t* lock);
+	/* Copies m_task from rhs, makes adds rhs.m_waitlist to
+	 * m_waitlist, and removes rhs.m_waitlist from the waitlist */
+	void move(task_desc& rhs);
+
 	void signal_finished();
 	void run_task();
 
 	void add_to_waitlist(wait_desc* desc);
+	void detach_listhead();
 
 	const bool operator==(itask * const task) const;
 
