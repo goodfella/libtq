@@ -286,7 +286,7 @@ bool task_queue::cancel_task(itask * const task)
 
     if( m_tasks.empty() == true )
     {
-	// the task queue is not stopped, so there's more work to do
+	// the task queue is empty, so there's no task to cancel
 	return false;
     }
     else
@@ -336,12 +336,12 @@ void* task_queue::task_runner(void* tqueue)
 
     do
     {
-	/* At this if statement, the lock is held from one of three
+	/* At this if statement, the lock is taken from one of three
 	 * places
 	 *
 	 * From the pthread_mutex_lock at the top of this function.
 	 *
-	 * From the pthread_mutex_lock inside the task_handle destructor
+	 * From the pthread_mutex_lock after the catch statement.
 	 *
 	 * From the return of pthread_cond_wait in the else statement.
 	 */
