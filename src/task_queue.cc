@@ -11,38 +11,6 @@
 using namespace std;
 using namespace libtq;
 
-namespace libtq
-{
-    /// Cleans up the task runner after it's exited
-    class task_runner_cleanup
-    {
-	public:
-
-	task_runner_cleanup(task_queue* const queue);
-	~task_runner_cleanup();
-
-	private:
-
-	task_queue* m_queue;
-    };
-
-    task_runner_cleanup::task_runner_cleanup(task_queue * const queue):
-	m_queue(queue)
-    {}
-    
-    task_runner_cleanup::~task_runner_cleanup()
-    {
-	// take the shutdown lock to modify m_started
-	pthread_mutex_lock(&m_queue->m_shutdown_lock);
-
-	m_queue->m_started = false;
-
-	// signal all queue waiters that the task runner exited
-	pthread_cond_broadcast(&m_queue->m_shutdown_cond);
-	pthread_mutex_unlock(&m_queue->m_shutdown_lock);
-    }
-}
-
 namespace
 {
     struct shutdown_exception {};
@@ -59,19 +27,16 @@ namespace
 }
 
 task_queue::task_queue():
-    m_started(false),
-    m_shutdown_pending(false)
+    m_started(false)
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_mutex_init(&m_shutdown_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
-    pthread_cond_init(&m_shutdown_cond, NULL);
 }
 
 task_queue::~task_queue()
 {
     stop_queue();
-    pthread_cond_destroy(&m_shutdown_cond);
     pthread_cond_destroy(&m_cond);
     pthread_mutex_destroy(&m_shutdown_lock);
     pthread_mutex_destroy(&m_lock);
@@ -83,29 +48,13 @@ int task_queue::start_queue()
 
     if( m_started == true )
     {
-	return false;
+	return 0;
     }
 
     int start_ret = pthread_create(&m_thread, NULL, task_runner, this);
     m_started = (start_ret == 0 ? true : false);
 
-    if( m_started == true )
-    {
-	// detach the thread, so it's resources get cleaned up
-	pthread_detach(m_thread);
-    }
-
     return start_ret;
-}
-
-void task_queue::wait_for_task_runner()
-{
-    // At this point, the task runner should be waiting on the
-    // shutdown lock in its cancelation routine
-    while( m_started == true )
-    {
-	pthread_cond_wait(&m_shutdown_cond, &m_shutdown_lock);
-    }
 }
 
 void task_queue::stop_queue()
@@ -117,27 +66,15 @@ void task_queue::stop_queue()
 	return;
     }
 
-    // Another thread is shutting down the task runner, so just wait
-    // until the task runner signals it's done
-    if( m_shutdown_pending == true )
-    {
-	wait_for_task_runner();
-	return;
-    }
-
-    m_shutdown_pending = true;
-
     shutdown_task kill_task_runner;
 
     // queue and wait for the shutdown task to finish
     queue_task(&kill_task_runner);
     wait_for_task(&kill_task_runner);
 
-    // Wait for the task runner to finish, and reset the shutdown
-    // pending flag.  Note that the pthread_cond_wait in
-    // wait_for_task_runner will unlock the m_shutdown_lock mutex
-    wait_for_task_runner();
-    m_shutdown_pending = false;
+    pthread_join(m_thread, NULL);
+
+    m_started = false;
 }
 
 bool task_queue::priv_queue_task(itask * const itaskp)
@@ -227,10 +164,6 @@ void* task_queue::task_runner(void* tqueue)
     task_queue * queue = static_cast<task_queue*>(tqueue);
 
     pthread_mutex_lock(&queue->m_lock);
-
-    // during stack unwinding, this object will cleanup the task
-    // runner thread
-    task_runner_cleanup cleanup(queue);
 
     do
     {
