@@ -3,46 +3,16 @@
 #include <iostream>
 
 #include "task_queue.hpp"
-#include "task.hpp"
 #include "itask.hpp"
+#include "mutex_lock.hpp"
+#include "task.hpp"
+#include "task_cleanup.hpp"
 
 using namespace std;
 using namespace libtq;
 
 namespace libtq
 {
-    class mutex_lock
-    {
-	public:
-
-	mutex_lock(pthread_mutex_t* lock);
-	~mutex_lock();
-
-	void unlock();
-	void lock(pthread_mutex_t* lock);
-
-	private:
-
-	pthread_mutex_t* m_lock;
-    };
-
-    /// Runs tasks and handles cleanup in the event of an exception
-    class task_handle
-    {
-	public:
-
-	task_handle(pthread_mutex_t * const lock);
-	~task_handle();
-
-	void set_task(task& desc);
-	void run_task();
-
-	private:
-
-	pthread_mutex_t* m_lock;
-	task m_task;
-    };
-
     /// Cleans up the task runner after it's exited
     class task_runner_cleanup
     {
@@ -55,29 +25,6 @@ namespace libtq
 
 	task_queue* m_queue;
     };
-
-    task_handle::task_handle(pthread_mutex_t * const lock):
-	m_lock(lock)
-    {}
-
-    task_handle::~task_handle()
-    {
-	// takes the queue lock, signals waiters and removes the task
-	// from the queue
-	mutex_lock lock(m_lock);
-	m_task.signal_finished();
-	m_task.detach_listhead();
-    }
-
-    void task_handle::set_task(task& task)
-    {
-	m_task.move(task);
-    }
-    
-    void task_handle::run_task()
-    {
-	m_task.run_task();
-    }
 
     task_runner_cleanup::task_runner_cleanup(task_queue * const queue):
 	m_queue(queue)
@@ -108,34 +55,6 @@ namespace
     void shutdown_task::run()
     {
 	throw shutdown_exception();
-    }
-}
-
-mutex_lock::mutex_lock(pthread_mutex_t* lock):
-    m_lock(lock)
-{
-    this->lock(lock);
-}
-
-mutex_lock::~mutex_lock()
-{
-    unlock();
-}
-
-void mutex_lock::unlock()
-{
-    if( m_lock != NULL )
-    {
-	pthread_mutex_unlock(m_lock);
-	m_lock = NULL;
-    }
-}
-
-void mutex_lock::lock(pthread_mutex_t* lock)
-{
-    if( lock != NULL )
-    {
-	pthread_mutex_lock(lock);
     }
 }
 
@@ -211,7 +130,8 @@ void task_queue::stop_queue()
     shutdown_task kill_task_runner;
 
     // queue and wait for the shutdown task to finish
-    queue_task_wait(&kill_task_runner);
+    queue_task(&kill_task_runner);
+    wait_for_task(&kill_task_runner);
 
     // Wait for the task runner to finish, and reset the shutdown
     // pending flag.  Note that the pthread_cond_wait in
@@ -225,7 +145,7 @@ bool task_queue::priv_queue_task(itask * const itaskp)
     // a task can only be scheduled once
     if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
     {
-	m_tasks.push_back(task(itaskp));
+	m_tasks.push_back(task_handle(m_allocator.alloc(itaskp), &m_allocator));
 
 	// task queue was empty signal the task runner
 	if( m_tasks.size() == 1 )
@@ -245,83 +165,61 @@ void task_queue::queue_task(itask * const task)
     priv_queue_task(task);
 }
 
-bool task_queue::queue_task_wait(itask * const task)
+bool task_queue::cancel_task(itask * const itaskp)
 {
-    mutex_lock lock(&m_lock);
+    task_handle thandle;
 
-    if( priv_queue_task(task ) == true )
-    {	
-	// Here, the task was not allready queued so we can wait on it
-	priv_wait_for_task(m_tasks.back());
+    {
+	// we have separate scope here so the lock is unlocked when
+	// the waiters are signaled
+	mutex_lock lock(&m_lock);
+
+	if( m_tasks.empty() == true )
+	{
+	    // the task queue is empty, so there's no task to cancel
+	    return false;
+	}
+
+	list<task_handle>::iterator th = find(m_tasks.begin(), m_tasks.end(), itaskp);
+
+	if( th != m_tasks.end() )
+	{
+	    thandle = *th;
+	    m_tasks.erase(th);
+	}
+    }
+
+    if( thandle.is_set() )
+    {
+	thandle->signal_finished();
 	return true;
     }
 
     return false;
 }
 
-bool task_queue::priv_cancel_task(itask * const itaskp)
+bool task_queue::wait_for_task(itask * const taskp)
 {
-    list<task>::iterator canceled_task = find(m_tasks.begin(), m_tasks.end(),
-						   itaskp);
+    task_handle thandle;
 
-    if( canceled_task != m_tasks.end() )
     {
-	// The task was scheduled, so signal any waiters, and remove
-	// the task from the queue
-	canceled_task->signal_finished();
-	m_tasks.erase(canceled_task);
+	mutex_lock lock(&m_lock);
 
-	return true;
+	list<task_handle>::iterator th = find(m_tasks.begin(), m_tasks.end(), taskp);
+
+	if( th != m_tasks.end() )
+	{
+	    thandle = *th;
+	}
     }
-    else
+
+    if( thandle.is_set() == true )
     {
-	// The task was not scheduled, so there's nothing to do
-	return false;
-    }
-}
-
-bool task_queue::cancel_task(itask * const task)
-{
-    mutex_lock lock(&m_lock);
-
-    if( m_tasks.empty() == true )
-    {
-	// the task queue is empty, so there's no task to cancel
-	return false;
-    }
-    else
-    {
-	// search for and cancel the task
-	return priv_cancel_task(task);
-    }
-}
-
-void task_queue::priv_wait_for_task(task& td)
-{
-    wait_desc desc;
-    td.add_to_waitlist(&desc);
-    desc.wait_for_task(&m_lock);
-}
-
-bool task_queue::priv_wait_for_task(itask * const itaskp)
-{
-    list<task>::iterator req_task = find(m_tasks.begin(),
-					      m_tasks.end(),
-					      itaskp);
-
-    if( req_task != m_tasks.end() )
-    {
-	priv_wait_for_task(*req_task);
+	thandle->wait_for_task();
 	return true;
     }
 
     return false;
-}
-
-bool task_queue::wait_for_task(itask * const task)
-{
-    mutex_lock lock(&m_lock);
-    return priv_wait_for_task(task);
 }
 
 void* task_queue::task_runner(void* tqueue)
@@ -349,16 +247,16 @@ void* task_queue::task_runner(void* tqueue)
 	{
 	    try
 	    {
-		task_handle task(&queue->m_lock);
+		task_cleanup tcleanup;
 
 		// take ownership of the task and remove the old
 		// task from the task list
-		task.set_task(queue->m_tasks.front());
+		tcleanup = queue->m_tasks.front();
 		queue->m_tasks.pop_front();
 
 		// run the task
 		pthread_mutex_unlock(&queue->m_lock);
-		task.run_task();
+		tcleanup->run_task();
 	    }
 	    catch (const shutdown_exception& ex)
 	    {

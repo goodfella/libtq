@@ -7,6 +7,10 @@ ADD_DEFINITIONS(-g -Wall -Werror)
 ADD_LIBRARY(tq
   STATIC
   src/task_queue.cc
-  src/task.cc)
+  src/task_cleanup.cc
+  src/task_handle.cc
+  src/task_allocator.cc
+  src/task.cc
+  src/mutex_lock.cc)
 
 ADD_SUBDIRECTORY(tests/tq-tester)
