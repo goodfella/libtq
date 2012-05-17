@@ -1,17 +1,17 @@
-#ifndef TASK_HPP
-#define TASK_HPP
+#ifndef TEST_TASK_HPP
+#define TEST_TASK_HPP
 
 #include <pthread.h>
 #include "itask.hpp"
 
 namespace tq_tester
 {
-    class task : public libtq::itask
+    class test_task : public libtq::itask
     {
 	public:
 	
-	task();
-	~task();
+	test_task();
+	~test_task();
 	
 	void run();
 	const unsigned long runcount() const;

@@ -1,5 +1,5 @@
-#ifndef TASK_DESC_HPP
-#define TASK_DESC_HPP
+#ifndef TASK_HPP
+#define TASK_HPP
 
 #include <pthread.h>
 
@@ -38,16 +38,16 @@ namespace libtq
 
     /** Keeps track of all the waiters
      */
-    class task_desc
+    class task
     {
 	public:
 
-	task_desc();
-	explicit task_desc(itask* task);
+	task();
+	explicit task(itask* task);
 
 	/* Copies m_task from rhs, makes adds rhs.m_waitlist to
 	 * m_waitlist, and removes rhs.m_waitlist from the waitlist */
-	void move(task_desc& rhs);
+	void move(task& rhs);
 
 	void signal_finished();
 	void run_task();
@@ -60,13 +60,13 @@ namespace libtq
 	private:
 
 	// purposely not defined because it should never be called
-	task_desc& operator=(const task_desc& rhs);
+	task& operator=(const task& rhs);
 
 	itask* m_task;
 	wait_desc m_waitlist;
     };
 
-    inline const bool task_desc::operator==(itask * const task) const
+    inline const bool task::operator==(itask * const task) const
     {
 	return task == m_task;
     }

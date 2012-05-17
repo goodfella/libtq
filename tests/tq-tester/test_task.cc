@@ -1,8 +1,8 @@
-#include "task.hpp"
+#include "test_task.hpp"
 
 using namespace tq_tester;
 
-task::task():
+test_task::test_task():
     m_runcount(0),
     m_waitcount(0),
     m_cancelcount(0)
@@ -10,24 +10,24 @@ task::task():
     pthread_mutex_init(&m_lock, NULL);
 }
 
-task::~task()
+test_task::~test_task()
 {
     pthread_mutex_destroy(&m_lock);
 }
 
-void task::inc_counter(unsigned long& counter)
+void test_task::inc_counter(unsigned long& counter)
 {
     pthread_mutex_lock(&m_lock);
     ++counter;
     pthread_mutex_unlock(&m_lock);
 }
 
-void task::inc_runcount()
+void test_task::inc_runcount()
 {
     inc_counter(m_runcount);
 }
 
-const unsigned long task::counter(const unsigned long& counter) const
+const unsigned long test_task::counter(const unsigned long& counter) const
 {
     unsigned long temp;
     pthread_mutex_lock(&m_lock);
@@ -36,27 +36,27 @@ const unsigned long task::counter(const unsigned long& counter) const
     return temp;
 }
 
-const unsigned long task::runcount() const
+const unsigned long test_task::runcount() const
 {
     return counter(m_runcount);
 }
 
-const unsigned long task::cancelcount() const
+const unsigned long test_task::cancelcount() const
 {
     return counter(m_cancelcount);
 }
 
-void task::inc_waitcount()
+void test_task::inc_waitcount()
 {
     inc_counter(m_waitcount);
 }
 
-void task::inc_cancelcount()
+void test_task::inc_cancelcount()
 {
     inc_counter(m_cancelcount);
 }
 
-void task::run()
+void test_task::run()
 {
     inc_runcount();
 }

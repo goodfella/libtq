@@ -4,7 +4,7 @@
 #include <string>
 
 #include "bool_flag.hpp"
-#include "task.hpp"
+#include "test_task.hpp"
 
 namespace libtq
 {
@@ -15,9 +15,9 @@ namespace tq_tester
 {
     struct task_thread_data
     {
-	task_thread_data(task* t, libtq::task_queue* const q, bool_flag* f);
+	task_thread_data(test_task* t, libtq::task_queue* const q, bool_flag* f);
 
-	task* taskp;
+	test_task* taskp;
 	libtq::task_queue* queue;
 	bool_flag* stop_thread;
     };
@@ -35,7 +35,7 @@ namespace tq_tester
 
 	private:
 
-	task m_task;
+	test_task m_task;
 	bool_flag m_stop_threads;
 	std::string m_label;
 	task_thread_data m_desc;

@@ -7,7 +7,7 @@ ADD_EXECUTABLE(tq-tester
   tq_tester.cc
   task_manager.cc
   task_thread_manager.cc
-  task.cc
+  test_task.cc
   queue_thread_manager.cc
   bool_flag.cc)
 

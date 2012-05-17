@@ -7,6 +7,6 @@ ADD_DEFINITIONS(-g -Wall -Werror)
 ADD_LIBRARY(tq
   STATIC
   src/task_queue.cc
-  src/task_desc.cc)
+  src/task.cc)
 
 ADD_SUBDIRECTORY(tests/tq-tester)

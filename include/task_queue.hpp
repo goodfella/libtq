@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <list>
 
-#include "task_desc.hpp"
+#include "task.hpp"
 
 namespace libtq
 {
@@ -81,7 +81,7 @@ namespace libtq
 	bool m_shutdown_pending;
 
 	// List of tasks to run
-	std::list<task_desc> m_tasks;
+	std::list<task> m_tasks;
 
 	// Protects the m_tasks list.  If m_shutdown_lock and m_lock
 	// both need to be taken, then the m_shutdown_lock must be
@@ -129,7 +129,7 @@ namespace libtq
 	bool priv_wait_for_task(itask* const task);
 
 	// Waits on the task passed in, assumes m_lock is held
-	void priv_wait_for_task(task_desc& desc);
+	void priv_wait_for_task(task& desc);
 
 	// searches for a task, and cancels it assumes m_lock is held
 	bool priv_cancel_task(itask * const task);

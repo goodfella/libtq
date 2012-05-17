@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "task_queue.hpp"
-#include "task_desc.hpp"
+#include "task.hpp"
 #include "itask.hpp"
 
 using namespace std;
@@ -34,13 +34,13 @@ namespace libtq
 	task_handle(pthread_mutex_t * const lock);
 	~task_handle();
 
-	void set_task(task_desc& desc);
+	void set_task(task& desc);
 	void run_task();
 
 	private:
 
 	pthread_mutex_t* m_lock;
-	task_desc m_task;
+	task m_task;
     };
 
     /// Cleans up the task runner after it's exited
@@ -69,7 +69,7 @@ namespace libtq
 	m_task.detach_listhead();
     }
 
-    void task_handle::set_task(task_desc& task)
+    void task_handle::set_task(task& task)
     {
 	m_task.move(task);
     }
@@ -220,12 +220,12 @@ void task_queue::stop_queue()
     m_shutdown_pending = false;
 }
 
-bool task_queue::priv_queue_task(itask * const task)
+bool task_queue::priv_queue_task(itask * const itaskp)
 {
     // a task can only be scheduled once
-    if( find(m_tasks.begin(), m_tasks.end(), task) == m_tasks.end() )
+    if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
     {
-	m_tasks.push_back(task_desc(task));
+	m_tasks.push_back(task(itaskp));
 
 	// task queue was empty signal the task runner
 	if( m_tasks.size() == 1 )
@@ -259,10 +259,10 @@ bool task_queue::queue_task_wait(itask * const task)
     return false;
 }
 
-bool task_queue::priv_cancel_task(itask * const task)
+bool task_queue::priv_cancel_task(itask * const itaskp)
 {
-    list<task_desc>::iterator canceled_task = find(m_tasks.begin(), m_tasks.end(),
-						   task);
+    list<task>::iterator canceled_task = find(m_tasks.begin(), m_tasks.end(),
+						   itaskp);
 
     if( canceled_task != m_tasks.end() )
     {
@@ -296,18 +296,18 @@ bool task_queue::cancel_task(itask * const task)
     }
 }
 
-void task_queue::priv_wait_for_task(task_desc& td)
+void task_queue::priv_wait_for_task(task& td)
 {
     wait_desc desc;
     td.add_to_waitlist(&desc);
     desc.wait_for_task(&m_lock);
 }
 
-bool task_queue::priv_wait_for_task(itask * const task)
+bool task_queue::priv_wait_for_task(itask * const itaskp)
 {
-    list<task_desc>::iterator req_task = find(m_tasks.begin(),
+    list<task>::iterator req_task = find(m_tasks.begin(),
 					      m_tasks.end(),
-					      task);
+					      itaskp);
 
     if( req_task != m_tasks.end() )
     {
@@ -352,7 +352,7 @@ void* task_queue::task_runner(void* tqueue)
 		task_handle task(&queue->m_lock);
 
 		// take ownership of the task and remove the old
-		// task_desc from the task list
+		// task from the task list
 		task.set_task(queue->m_tasks.front());
 		queue->m_tasks.pop_front();
 

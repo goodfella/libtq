@@ -8,7 +8,7 @@ using namespace std;
 using namespace tq_tester;
 using namespace libtq;
 
-task_thread_data::task_thread_data(task* t, task_queue* const q, bool_flag* f):
+task_thread_data::task_thread_data(test_task* t, task_queue* const q, bool_flag* f):
     taskp(t),
     queue(q),
     stop_thread(f)

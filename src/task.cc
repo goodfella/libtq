@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdio>
 
-#include "task_desc.hpp"
+#include "task.hpp"
 #include "itask.hpp"
 
 using namespace std;
@@ -87,38 +87,38 @@ void wait_desc::signal_waiters()
     }
 }
 
-task_desc::task_desc(itask* task):
+task::task(itask* task):
     m_task(task)
 {}
 
-task_desc::task_desc():
+task::task():
     m_task(NULL)
 {}
 
-void task_desc::run_task()
+void task::run_task()
 {
     m_task->run();
 }
 
-void task_desc::add_to_waitlist(wait_desc* desc)
+void task::add_to_waitlist(wait_desc* desc)
 {
     desc->add_to_waitlist(&m_waitlist);
 }
 
-void task_desc::detach_listhead()
+void task::detach_listhead()
 {
     m_waitlist.remove_from_waitlist();
 }
 
-void task_desc::move(task_desc& rhs)
+void task::move(task& rhs)
 {
     m_task = rhs.m_task;
 
-    // uses this task_desc's m_waitlist as the head of the list
+    // uses this task's m_waitlist as the head of the list
     rhs.m_waitlist.replace_head(&m_waitlist);
 }
 
-void task_desc::signal_finished()
+void task::signal_finished()
 {
     m_waitlist.signal_waiters();
 }
