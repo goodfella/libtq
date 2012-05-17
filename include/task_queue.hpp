@@ -2,10 +2,8 @@
 #define TASK_QUEUE_HPP
 
 #include <pthread.h>
-#include <list>
 
-#include "task_handle.hpp"
-#include "task_allocator.hpp"
+#include "itask_queue.hpp"
 
 namespace libtq
 {
@@ -62,44 +60,35 @@ namespace libtq
 
 	private:
 
-	// Predicate used to determine if the task runner thread is
+	/// Predicate used to determine if the task runner thread is started
 	bool m_started;
 
-	// List of tasks to run
-	std::list<task_handle> m_tasks;
-
-	// Protects the m_tasks list.  If m_shutdown_lock and m_lock
-	// both need to be taken, then the m_shutdown_lock must be
-	// taken first.
-	pthread_mutex_t m_lock;
-
-	// Protects the m_started predicate.  If m_shutdown_lock and
-	// m_lock both need to be taken, then the m_shutdown_lock must
-	// be taken first.
+	/// Protects the m_started predicate.
 	pthread_mutex_t m_shutdown_lock;
 
-	// Used to signal the task runner waiting on an empty task
-	// list
-	pthread_cond_t m_cond;
-
-	// Task runner thread handle
+	/// Task runner thread handle
 	pthread_t m_thread;
 
-	task_allocator m_allocator;
-
-	/** Queues a task
-	 *
-	 *  @return true if the task was queued, false otherwise
-	 *
-	 *  @note Assumes m_lock is held prior to being called
-	 */
-	bool priv_queue_task(itask * const task);
-
-	// searches for a task, and cancels it assumes m_lock is held
-	bool priv_cancel_task(itask * const task);
+	/// Underlying task queue
+	itask_queue m_queue;
 
 	static void* task_runner(void* task_queue);
     };
+
+    inline void task_queue::queue_task(itask * const taskp)
+    {
+	m_queue.queue_task(taskp);
+    }
+
+    inline bool task_queue::wait_for_task(itask * const taskp)
+    {
+	return m_queue.wait_for_task(taskp);
+    }
+
+    inline bool task_queue::cancel_task(itask * const taskp)
+    {
+	return m_queue.cancel_task(taskp);
+    }
 }
 
 #endif

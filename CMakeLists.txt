@@ -7,6 +7,7 @@ ADD_DEFINITIONS(-g -Wall -Werror)
 ADD_LIBRARY(tq
   STATIC
   src/task_queue.cc
+  src/itask_queue.cc
   src/task_cleanup.cc
   src/task_handle.cc
   src/task_allocator.cc

@@ -10,7 +10,7 @@ namespace libtq
     {
 	public:
 
-	task_cleanup();
+	task_cleanup(const task_handle& rhs);
 
 	/// Notifies the waiters that the task is complete
 	~task_cleanup();

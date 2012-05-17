@@ -2,7 +2,8 @@
 #include "task.hpp"
 using namespace libtq;
 
-task_cleanup::task_cleanup()
+task_cleanup::task_cleanup(const task_handle& rhs):
+    m_handle(rhs)
 {}
 
 task_cleanup::~task_cleanup()
