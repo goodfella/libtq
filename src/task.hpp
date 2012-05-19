@@ -8,35 +8,6 @@ namespace libtq
     class itask;
     class task_allocator;
 
-    class wait_desc
-    {
-	public:
-
-	explicit wait_desc(pthread_mutex_t* m);
-	wait_desc();
-	wait_desc(const wait_desc& wd);
-
-	~wait_desc();
-
-	void add_to_waitlist(wait_desc* waitlist);
-	void remove_from_waitlist();
-	void replace_head(wait_desc* const new_head);
-
-	void wait_for_task(pthread_mutex_t* mutex);
-	void signal_waiters();
-
-	private:
-
-	// purposely not defined because it should never be used
-	wait_desc& operator=(const wait_desc& rhs);
-
-	struct wait_desc* m_next;
-	struct wait_desc* m_prev;
-
-	bool m_finished;
-	pthread_cond_t* m_condition;
-    };
-
     /** Keeps track of all the waiters
      */
     class task
@@ -46,6 +17,7 @@ namespace libtq
 	public:
 
 	task();
+	~task();
 
 	/// Increments the ref count of the task
 	void get_ref();

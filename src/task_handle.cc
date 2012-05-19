@@ -41,7 +41,12 @@ task_handle& task_handle::operator=(const task_handle& rhs)
     }
 
     m_task = rhs.m_task;
-    m_task->get_ref();
+
+    if( m_task != NULL )
+    {
+	m_task->get_ref();
+    }
+
     m_allocator = rhs.m_allocator;
 
     return *this;
