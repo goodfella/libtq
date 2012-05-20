@@ -53,7 +53,8 @@ void itask_queue::queue_task(itask * const itaskp)
 
 bool itask_queue::cancel_task(itask * const itaskp)
 {
-    task_handle thandle;
+    task_cleanup tcleanup;
+    bool ret = false;
 
     {
 	// we have a separate scope here so the lock is unlocked when
@@ -70,18 +71,13 @@ bool itask_queue::cancel_task(itask * const itaskp)
 
 	if( th != m_tasks.end() )
 	{
-	    thandle = *th;
+	    tcleanup = *th;
 	    m_tasks.erase(th);
+	    ret = true;
 	}
     }
 
-    if( thandle.is_set() )
-    {
-	thandle->signal_finished();
-	return true;
-    }
-
-    return false;
+    return ret;
 }
 
 bool itask_queue::wait_for_task(itask * const taskp)

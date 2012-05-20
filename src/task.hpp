@@ -34,6 +34,16 @@ namespace libtq
 	/// Waits for the task
 	void wait_for_task();
 
+	/** Waits for all the waiters to finish
+	 *
+	 *  This function blocks the calling thread until the refcount
+	 *  is 1.
+	 *
+	 *  @note Only one thread should call this function otherwise
+	 *  every thread that calls this function will deadlock.
+	 */
+	void wait_for_waiters();
+
 	/// Returns true if the object refers to the given itask
 	const bool operator==(itask const * const task) const;
 
@@ -66,6 +76,7 @@ namespace libtq
 	mutable pthread_mutex_t m_lock;
 	pthread_mutex_t m_ref_lock;
 	pthread_cond_t m_cond;
+	pthread_cond_t m_ref_cond;
     };
 }
 

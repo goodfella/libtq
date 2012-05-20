@@ -13,6 +13,7 @@ task::task():
     pthread_mutex_init(&m_lock, NULL);
     pthread_mutex_init(&m_ref_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
+    pthread_cond_init(&m_ref_cond, NULL);
 }
 
 task::~task()
@@ -56,6 +57,16 @@ void task::wait_for_task()
     }
 }
 
+void task::wait_for_waiters()
+{
+    mutex_lock lock(&m_ref_lock);
+
+    while ( ref_count > 1 )
+    {
+	pthread_cond_wait(&m_ref_cond, &m_ref_lock);
+    }
+}
+
 void task::reset(task* const next)
 {
     mutex_lock lock(&m_lock);
@@ -74,10 +85,17 @@ int task::put_ref()
 {
     int new_count;
 
-    mutex_lock lock(&m_ref_lock);
+    {
+	mutex_lock lock(&m_ref_lock);
 
-    --ref_count;
-    new_count = ref_count;
+	--ref_count;
+	new_count = ref_count;
+    }
+
+    if( new_count == 1 )
+    {
+	pthread_cond_signal(&m_ref_cond);
+    }
 
     return new_count;
 }

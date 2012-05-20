@@ -5,14 +5,23 @@
 
 namespace libtq
 {
-    /// Used to run a task and notify waiters that the task is finished
+    /** Insures there are no more references to a task's task_handle
+     *
+     * This class is used when all task_handle references to a task
+     * need to be cleaned up.  It signals the waiters that the task is
+     * finished, and waits for the waiters to relinquish their
+     * task_handles.
+     *
+     * @note There shall only be one task_cleanup object for a task at
+     * any time.  Otherwise each thread with a task_cleanup object for
+     * the same task will block indefinitely.
+     */
     class task_cleanup
     {
 	public:
 
+	task_cleanup();
 	task_cleanup(const task_handle& rhs);
-
-	/// Notifies the waiters that the task is complete
 	~task_cleanup();
 
 	task_cleanup& operator=(const task_handle& rhs);
