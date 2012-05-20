@@ -6,7 +6,6 @@
 namespace libtq
 {
     class itask;
-    class task_allocator;
 
     /** Keeps track of all the waiters
      */
