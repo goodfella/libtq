@@ -18,6 +18,7 @@ task::task():
 
 task::~task()
 {
+    pthread_cond_destroy(&m_ref_cond);
     pthread_cond_destroy(&m_cond);
     pthread_mutex_destroy(&m_ref_lock);
     pthread_mutex_destroy(&m_lock);
