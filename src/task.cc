@@ -8,6 +8,7 @@ using namespace libtq;
 task::task():
     m_task(NULL),
     m_finished(false),
+    m_canceled(false),
     m_refcount(0)
 {
     pthread_mutex_init(&m_lock, NULL);
@@ -47,15 +48,31 @@ void task::signal_finished()
     pthread_cond_broadcast(&m_cond);
 }
 
-void task::wait_for_task()
+void task::signal_canceled()
 {
+    {
+	mutex_lock lock(&m_lock);
+	m_canceled = true;
+    }
+
+    pthread_cond_broadcast(&m_cond);
+}
+
+const bool task::wait_for_task()
+{
+    // boolean indicating whether or not the task was ran
+    bool task_ran = false;
+
     mutex_lock lock(&m_lock);
 
     // wait for the task to finish
-    while( m_finished == false )
+    while( m_finished == false && m_canceled == false )
     {
 	pthread_cond_wait(&m_cond, &m_lock);
     }
+
+    task_ran = m_finished;
+    return task_ran;
 }
 
 void task::wait_for_waiters()
@@ -72,6 +89,7 @@ void task::reset(task* const next)
 {
     mutex_lock lock(&m_lock);
     m_finished = false;
+    m_canceled = false;
     m_task = NULL;
     m_next = next;
 }

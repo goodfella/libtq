@@ -20,8 +20,8 @@ namespace libtq
     {
 	public:
 
-	task_cleanup();
-	task_cleanup(const task_handle& rhs);
+	task_cleanup(void (task::*signaler)(void));
+	task_cleanup(const task_handle& rhs, void (task::*signaler)(void));
 	~task_cleanup();
 
 	task_cleanup& operator=(const task_handle& rhs);
@@ -34,6 +34,7 @@ namespace libtq
 	task_cleanup(const task_cleanup& rhs);
 	task_cleanup& operator=(const task_cleanup& rhs);
 
+	void (task::*m_signaler)(void);
 	task_handle m_handle;
     };
 

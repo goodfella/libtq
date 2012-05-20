@@ -41,12 +41,15 @@ namespace libtq
 	/** Waits for a task to complete
 	 *
 	 *  The calling thread will block until the task execution
-	 *  completes.  If the task is not already queued, this
-	 *  function exits immediately.
+	 *  completes or the task is canceled.  If the task is not
+	 *  already queued, this function exits immediately.
 	 *
-	 *  @return true if the task was waited on, false otherwise
+	 *  @return greater than zero if the task was executed while
+	 *  being waited on, less than zero if the task was canceled
+	 *  while being waited on, or zero if the task was not already
+	 *  scheduled.
 	 */
-	bool wait_for_task(itask * const task);
+	int wait_for_task(itask * const task);
 
 	/** Cancels the execution of a task
 	 *
@@ -80,7 +83,7 @@ namespace libtq
 	m_queue.queue_task(taskp);
     }
 
-    inline bool task_queue::wait_for_task(itask * const taskp)
+    inline int task_queue::wait_for_task(itask * const taskp)
     {
 	return m_queue.wait_for_task(taskp);
     }

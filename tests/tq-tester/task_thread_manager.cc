@@ -131,7 +131,7 @@ void* task_thread_manager::task_sch_wait_handler(void* t)
     {
 	desc->queue->queue_task(desc->taskp);
 
-	if( desc->queue->wait_for_task(desc->taskp) == true )
+	if( desc->queue->wait_for_task(desc->taskp) > 0 )
 	{
 	    desc->taskp->inc_waitcount();
 	}
@@ -165,7 +165,7 @@ void* task_thread_manager::task_wait_handler(void* t)
 
     while( desc->stop_thread->get() == false )
     {
-	if( desc->queue->wait_for_task(desc->taskp) == true )
+	if( desc->queue->wait_for_task(desc->taskp) > 0 )
 	{
 	    desc->taskp->inc_waitcount();
 	}

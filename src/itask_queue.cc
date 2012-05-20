@@ -53,7 +53,7 @@ void itask_queue::queue_task(itask * const itaskp)
 
 bool itask_queue::cancel_task(itask * const itaskp)
 {
-    task_cleanup tcleanup;
+    task_cleanup tcleanup(&task::signal_canceled);
     bool ret = false;
 
     {
@@ -80,7 +80,7 @@ bool itask_queue::cancel_task(itask * const itaskp)
     return ret;
 }
 
-bool itask_queue::wait_for_task(itask * const taskp)
+int itask_queue::wait_for_task(itask * const taskp)
 {
     task_handle thandle;
 
@@ -97,11 +97,10 @@ bool itask_queue::wait_for_task(itask * const taskp)
 
     if( thandle.is_set() == true )
     {
-	thandle->wait_for_task();
-	return true;
+	return (thandle->wait_for_task() == true ? 1 : -1);
     }
 
-    return false;
+    return 0;
 }
 
 void itask_queue::run_task()
@@ -120,7 +119,7 @@ void itask_queue::run_task()
 
     // take ownership of the task and remove the old task from the
     // task list
-    task_cleanup tcleanup(m_tasks.front());
+    task_cleanup tcleanup(m_tasks.front(), &task::signal_finished);
 
     m_tasks.pop_front();
     

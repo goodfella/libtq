@@ -27,11 +27,14 @@ namespace libtq
 	/// Signals the waiters that the task is finished
 	void signal_finished();
 
+	/// signals the waiters that the task has been canceled
+	void signal_canceled();
+
 	/// Runs the task
 	void run_task() const;
 
 	/// Waits for the task
-	void wait_for_task();
+	const bool wait_for_task();
 
 	/** Waits for all the waiters to finish
 	 *
@@ -70,6 +73,7 @@ namespace libtq
 	};
 
 	bool m_finished;
+	bool m_canceled;
 	int m_refcount;
 
 	mutable pthread_mutex_t m_lock;

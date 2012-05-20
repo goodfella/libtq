@@ -40,9 +40,12 @@ namespace libtq
 	 *  completes.  If the task is not already queued, this
 	 *  function exits immediately.
 	 *
-	 *  @return true if the task was waited on, false otherwise
+	 *  @return greater than zero if the task was executed while
+	 *  being waited on, less than zero if the task was canceled
+	 *  while being waited on, or zero if the task was not already
+	 *  scheduled.
 	 */
-	bool wait_for_task(itask * const task);
+	int wait_for_task(itask * const task);
 
 	/** Cancels the execution of a task
 	 *
