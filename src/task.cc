@@ -24,7 +24,7 @@ task::~task()
     pthread_mutex_destroy(&m_lock);
 }
 
-void task::run_task()
+void task::run_task() const
 {
     itask* itaskp = NULL;
 

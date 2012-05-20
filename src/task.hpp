@@ -28,7 +28,7 @@ namespace libtq
 	void signal_finished();
 
 	/// Runs the task
-	void run_task();
+	void run_task() const;
 
 	/// Waits for the task
 	void wait_for_task();
