@@ -93,6 +93,9 @@ void task_thread_manager::stop_threads()
 	pthread_join(m_task_cancel, NULL);
 	m_cancel_started = false;
     }
+
+    // wait for the task to finish
+    m_desc.queue->wait_for_task(&m_task);
 }
 
 task_thread_manager::~task_thread_manager()
