@@ -70,7 +70,7 @@ namespace libtq
 	};
 
 	bool m_finished;
-	int ref_count;
+	int m_refcount;
 
 	mutable pthread_mutex_t m_lock;
 	pthread_mutex_t m_ref_lock;

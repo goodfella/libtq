@@ -8,7 +8,7 @@ using namespace libtq;
 task::task():
     m_task(NULL),
     m_finished(false),
-    ref_count(0)
+    m_refcount(0)
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_mutex_init(&m_ref_lock, NULL);
@@ -61,7 +61,7 @@ void task::wait_for_waiters()
 {
     mutex_lock lock(&m_ref_lock);
 
-    while ( ref_count > 1 )
+    while ( m_refcount > 1 )
     {
 	pthread_cond_wait(&m_ref_cond, &m_ref_lock);
     }
@@ -78,7 +78,7 @@ void task::reset(task* const next)
 void task::get_ref()
 {
     mutex_lock lock(&m_ref_lock);
-    ++ref_count;
+    ++m_refcount;
 }
 
 int task::put_ref()
@@ -88,8 +88,8 @@ int task::put_ref()
     {
 	mutex_lock lock(&m_ref_lock);
 
-	--ref_count;
-	new_count = ref_count;
+	--m_refcount;
+	new_count = m_refcount;
     }
 
     if( new_count == 1 )
