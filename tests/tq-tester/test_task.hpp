@@ -16,6 +16,7 @@ namespace tq_tester
 	void run();
 	const unsigned long runcount() const;
 	const unsigned long cancelcount() const;
+	const unsigned long waitcount() const;
 	void inc_waitcount();
 	void inc_cancelcount();
 	

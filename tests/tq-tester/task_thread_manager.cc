@@ -106,7 +106,8 @@ task_thread_manager::~task_thread_manager()
 void task_thread_manager::print_stats() const
 {
     cout << m_label << " run count = " << m_task.runcount() << endl
-	 << m_label << " cancel count = " << m_task.cancelcount() << endl << endl;
+	 << m_label << " cancel count = " << m_task.cancelcount() << endl
+	 << m_label << " wait count = " << m_task.waitcount() << endl << endl;
 }
 
 void* task_thread_manager::task_sch_handler(void* t)
@@ -129,7 +130,12 @@ void* task_thread_manager::task_sch_wait_handler(void* t)
     while( desc->stop_thread->get() == false )
     {
 	desc->queue->queue_task(desc->taskp);
-	desc->queue->wait_for_task(desc->taskp);
+
+	if( desc->queue->wait_for_task(desc->taskp) == true )
+	{
+	    desc->taskp->inc_waitcount();
+	}
+
 	pthread_yield();
     };
 
@@ -159,7 +165,11 @@ void* task_thread_manager::task_wait_handler(void* t)
 
     while( desc->stop_thread->get() == false )
     {
-	desc->queue->wait_for_task(desc->taskp);
+	if( desc->queue->wait_for_task(desc->taskp) == true )
+	{
+	    desc->taskp->inc_waitcount();
+	}
+
 	pthread_yield();
     };
 

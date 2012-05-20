@@ -46,6 +46,11 @@ const unsigned long test_task::cancelcount() const
     return counter(m_cancelcount);
 }
 
+const unsigned long test_task::waitcount() const
+{
+    return counter(m_waitcount);
+}
+
 void test_task::inc_waitcount()
 {
     inc_counter(m_waitcount);
