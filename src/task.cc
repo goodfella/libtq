@@ -36,9 +36,12 @@ void task::run_task()
 
 void task::signal_finished()
 {
-    mutex_lock lock(&m_lock);
+    {
+	/* No need to hold the lock when signaling the waiters */
+	mutex_lock lock(&m_lock);
+	m_finished = true;
+    }
 
-    m_finished = true;
     pthread_cond_broadcast(&m_cond);
 }
 

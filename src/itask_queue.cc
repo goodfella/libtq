@@ -23,18 +23,31 @@ itask_queue::~itask_queue()
 
 void itask_queue::queue_task(itask * const itaskp)
 {
-    mutex_lock lock(&m_lock);
+    bool signal = false;
 
-    if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
     {
-	// The task is not already scheduled
-	m_tasks.push_back(task_handle(m_allocator.alloc(itaskp), &m_allocator));
+	/* There's a separate scope here so the signal can be done
+	 * without holding the mutex. */
 
-	// task queue was empty signal the task runner
-	if( m_tasks.size() == 1 )
+	mutex_lock lock(&m_lock);
+
+	if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
 	{
-	    pthread_cond_signal(&m_cond);
+	    // The task is not already scheduled
+	    m_tasks.push_back(task_handle(m_allocator.alloc(itaskp), &m_allocator));
+
+	    // task queue was empty signal the task runner
+	    if( m_tasks.size() == 1 )
+	    {
+		signal = true;
+	    }
 	}
+    }
+
+    if( signal == true )
+    {
+	/* Signal a waiting thread if the queue was previously empty */
+	pthread_cond_signal(&m_cond);
     }
 }
 
