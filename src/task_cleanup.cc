@@ -16,6 +16,5 @@ task_cleanup::~task_cleanup()
     if( m_handle.is_set() )
     {
 	((*m_handle).*m_signaler)();
-	m_handle->wait_for_waiters();
     }
 }
