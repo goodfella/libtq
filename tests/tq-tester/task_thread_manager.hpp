@@ -5,6 +5,7 @@
 
 #include "bool_flag.hpp"
 #include "test_task.hpp"
+#include "thread.hpp"
 
 namespace libtq
 {
@@ -40,15 +41,10 @@ namespace tq_tester
 	std::string m_label;
 	task_thread_data m_desc;
 
-	bool m_sch_started;
-	bool m_sch_wait_started;
-	bool m_cancel_started;
-	bool m_wait_started;
-
-	pthread_t m_task_sch;
-	pthread_t m_task_sch_wait;
-	pthread_t m_task_cancel;
-	pthread_t m_task_wait;
+	libtq::thread m_sch_thread;
+	libtq::thread m_sch_wait_thread;
+	libtq::thread m_cancel_thread;
+	libtq::thread m_wait_thread;
 
 	static void* task_sch_handler(void* task);
 	static void* task_sch_wait_handler(void* task);

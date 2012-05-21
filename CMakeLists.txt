@@ -14,4 +14,4 @@ ADD_LIBRARY(tq
   src/task.cc
   src/mutex_lock.cc)
 
-ADD_SUBDIRECTORY(tests/tq-tester)
+ADD_SUBDIRECTORY(tests)

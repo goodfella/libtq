@@ -1,0 +1,10 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(libtq-test CXX)
+ADD_DEFINITIONS(-g -Wall -Werror)
+
+ADD_LIBRARY(tq-test STATIC
+  src/thread.cc)
+
+INCLUDE_DIRECTORIES(include)
+
+ADD_SUBDIRECTORY(tq-tester)

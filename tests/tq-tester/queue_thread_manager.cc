@@ -8,9 +8,10 @@ using namespace std;
 using namespace libtq;
 using namespace tq_tester;
 
+bool_flag queue_thread_manager::m_stop_threads;
+
 queue_thread_manager::queue_thread_manager(task_queue* const queue):
-    m_queue(queue),
-    m_thread_started(false)
+    m_queue(queue)
 {}
 
 queue_thread_manager::~queue_thread_manager()
@@ -20,37 +21,21 @@ queue_thread_manager::~queue_thread_manager()
 
 void queue_thread_manager::start_thread()
 {
-    if( pthread_create(&m_thread, NULL, &queue_thread_manager::queue_thread, m_queue) != 0 )
-    {
-	throw std::runtime_error("error running queue thread");
-    }
-
-    m_thread_started = true;
+    m_stop_thread.start(queue_thread_manager::queue_thread, m_queue, "stop queue thread");
 }
 
 void queue_thread_manager::stop_thread()
 {
-    if( m_thread_started == false )
-    {
-	return;
-    }
+    m_stop_threads.set(true);
 
-    m_stop_thread.set(true);
-
-    if( m_thread_started == true )
-    {
-	pthread_join(m_thread, NULL);
-	m_thread_started = false;
-    }
+    m_stop_thread.join();
 }
-
-bool_flag queue_thread_manager::m_stop_thread;
 
 void* queue_thread_manager::queue_thread(void* q)
 {
     task_queue * queue = static_cast<task_queue*>(q);
 
-    while ( m_stop_thread.get() == false )
+    while ( m_stop_threads.get() == false )
     {
 	if( queue->start_queue() )
 	{

@@ -11,4 +11,4 @@ ADD_EXECUTABLE(tq-tester
   queue_thread_manager.cc
   bool_flag.cc)
 
-TARGET_LINK_LIBRARIES(tq-tester tq pthread)
+TARGET_LINK_LIBRARIES(tq-tester tq-test tq pthread)

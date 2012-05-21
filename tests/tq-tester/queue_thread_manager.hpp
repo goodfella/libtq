@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 
+#include "thread.hpp"
 #include "bool_flag.hpp"
 
 namespace libtq
@@ -25,11 +26,9 @@ namespace tq_tester
 	private:
 
 	libtq::task_queue* m_queue;
-	bool m_thread_started;
+	libtq::thread m_stop_thread;
 
-	pthread_t m_thread;
-
-	static bool_flag m_stop_thread;
+	static bool_flag m_stop_threads;
 	static void* queue_thread(void*);
     };
 }

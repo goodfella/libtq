@@ -16,83 +16,30 @@ task_thread_data::task_thread_data(test_task* t, task_queue* const q, bool_flag*
 
 task_thread_manager::task_thread_manager(const string& label, task_queue * const queue):
     m_label(label),
-    m_desc(&m_task, queue, &m_stop_threads),
-    m_sch_started(false),
-    m_sch_wait_started(false),
-    m_cancel_started(false),
-    m_wait_started(false)
+    m_desc(&m_task, queue, &m_stop_threads)
 {}
 
 void task_thread_manager::start_threads()
 {
-    if( pthread_create(&m_task_sch, NULL, task_thread_manager::task_sch_handler, &m_desc) != 0 )
-    {
-	throw std::runtime_error("error creating task scheduler thread");
-    }
-
-    m_sch_started = true;
-
-    if( pthread_create(&m_task_sch_wait, NULL, task_thread_manager::task_sch_wait_handler, &m_desc) != 0 )
-    {
-	throw std::runtime_error("error creating task schedule with a wait thread");
-    }
-
-    m_sch_wait_started = true;
-
-    if( pthread_create(&m_task_cancel, NULL, task_thread_manager::task_cancel_handler, &m_desc) != 0 )
-    {
-	throw std::runtime_error("error creating task canceler thread");
-    }
-
-    m_cancel_started = true;
-
-    if( pthread_create(&m_task_wait, NULL, task_thread_manager::task_wait_handler, &m_desc) != 0 )
-    {
-	throw std::runtime_error("error creating task wait thread");
-    }
-
-    m_wait_started = true;
+    m_sch_thread.start(&task_thread_manager::task_sch_handler, &m_desc, "task scheduler");
+    m_sch_wait_thread.start(&task_thread_manager::task_sch_wait_handler, &m_desc, "task wait scheduler");
+    m_cancel_thread.start(&task_thread_manager::task_cancel_handler, &m_desc, "task canceler");
+    m_wait_thread.start(&task_thread_manager::task_wait_handler, &m_desc, "task waiter");
 }
 
 void task_thread_manager::stop_threads()
 {
-    if( m_sch_started == false &&
-	m_sch_wait_started == false &&
-	m_wait_started == false &&
-	m_cancel_started == false )
-    {
-	return;
-    }
-
     // make sure the queue is started so the threads can clean up
     m_desc.queue->start_queue();
 
     // stop all the threads
     m_stop_threads.set(true);
 
-    if( m_sch_started == true )
-    {
-	pthread_join(m_task_sch, NULL);
-	m_sch_started = false;
-    }
-
-    if( m_sch_wait_started == true )
-    {
-	pthread_join(m_task_sch_wait, NULL);
-	m_sch_wait_started = false;
-    }
-
-    if( m_wait_started == true )
-    {
-	pthread_join(m_task_wait, NULL);
-	m_wait_started = false;
-    }
-
-    if( m_cancel_started == true )
-    {
-	pthread_join(m_task_cancel, NULL);
-	m_cancel_started = false;
-    }
+    // make sure all the threads are stopped
+    m_sch_thread.join();
+    m_sch_wait_thread.join();
+    m_cancel_thread.join();
+    m_wait_thread.join();
 
     // wait for the task to finish
     m_desc.queue->wait_for_task(&m_task);
