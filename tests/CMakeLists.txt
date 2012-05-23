@@ -3,7 +3,8 @@ PROJECT(libtq-test CXX)
 ADD_DEFINITIONS(-g -Wall -Werror)
 
 ADD_LIBRARY(tq-test STATIC
-  src/thread.cc)
+  src/thread.cc
+  src/bool_flag.cc)
 
 INCLUDE_DIRECTORIES(include)
 

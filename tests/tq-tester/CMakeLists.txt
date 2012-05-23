@@ -8,7 +8,7 @@ ADD_EXECUTABLE(tq-tester
   task_manager.cc
   task_thread_manager.cc
   test_task.cc
-  queue_thread_manager.cc
-  bool_flag.cc)
+  queue_thread_manager.cc)
+
 
 TARGET_LINK_LIBRARIES(tq-tester tq-test tq pthread)
