@@ -18,7 +18,7 @@ namespace tq_tester
 	private:
 
 	bool m_flag;
-	mutable pthread_mutex_t m_lock;
+	mutable pthread_rwlock_t m_lock;
     };
 }
 

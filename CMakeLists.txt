@@ -12,6 +12,8 @@ ADD_LIBRARY(tq
   src/task_handle.cc
   src/task_allocator.cc
   src/task.cc
-  src/mutex_lock.cc)
+  src/mutex_lock.cc
+  src/rwlock_rdlock.cc
+  src/rwlock_wrlock.cc)
 
 ADD_SUBDIRECTORY(tests)

@@ -66,8 +66,25 @@ namespace libtq
 	bool m_canceled;
 	int m_refcount;
 
-	mutable pthread_mutex_t m_lock;
+	/// Locks the m_finished and m_canceled booleans
+	mutable pthread_mutex_t m_state_lock;
+
+	/** Locks the m_task and m_next pointers
+	 *
+	 * A rw lock is used here because most of the time, the
+	 * pointers are read from and not written to.
+	 */
+	mutable pthread_rwlock_t m_task_lock;
+
+	/** Locks the ref count
+	 *
+	 *  This should be unnecessary, but right now there's no
+	 *  atomic support in C++.  Although I may end up using GCC's
+	 *  __sync_add_and_fetch builtin in the interim.
+	 */
 	pthread_mutex_t m_ref_lock;
+
+	/// Condition used to signal waiters when the task is complete or canceled
 	pthread_cond_t m_cond;
     };
 }
