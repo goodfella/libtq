@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <iostream>
+#include <vector>
 
 #include "task_thread_manager.hpp"
 #include "task_queue.hpp"
@@ -25,6 +26,7 @@ void task_thread_manager::start_threads()
     m_sch_wait_thread.start(&task_thread_manager::task_sch_wait_handler, &m_desc, "task wait scheduler");
     m_cancel_thread.start(&task_thread_manager::task_cancel_handler, &m_desc, "task canceler");
     m_wait_thread.start(&task_thread_manager::task_wait_handler, &m_desc, "task waiter");
+    m_scheduler_thread.start(&task_thread_manager::task_scheduler, &m_desc, "task schedular");
 }
 
 void task_thread_manager::stop_threads()
@@ -40,6 +42,7 @@ void task_thread_manager::stop_threads()
     m_sch_wait_thread.join();
     m_cancel_thread.join();
     m_wait_thread.join();
+    m_scheduler_thread.join();
 
     // wait for the task to finish
     m_desc.queue->wait_for_task(&m_task);
@@ -121,4 +124,30 @@ void* task_thread_manager::task_wait_handler(void* t)
     };
 
     pthread_exit(NULL);
+}
+
+void* task_thread_manager::task_scheduler(void* d)
+{
+    task_thread_data* data = static_cast<task_thread_data*>(d);
+
+    vector<test_task> tasks(10);
+
+    while ( data->stop_thread->get() == false )
+    {
+	for(vector<test_task>::iterator i = tasks.begin();
+	    i != tasks.end();
+	    ++i)
+	{
+	    data->queue->queue_task(&(*i));
+	}
+
+	for(vector<test_task>::iterator i = tasks.begin();
+	    i != tasks.end();
+	    ++i)
+	{
+	    data->queue->wait_for_task(&(*i));
+	}
+    }
+
+    return NULL;
 }
