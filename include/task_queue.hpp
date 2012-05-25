@@ -4,6 +4,7 @@
 #include <pthread.h>
 
 #include "itask_queue.hpp"
+#include "task_runner.hpp"
 
 namespace libtq
 {
@@ -75,13 +76,11 @@ namespace libtq
 	/// Protects the m_started predicate.
 	pthread_mutex_t m_shutdown_lock;
 
-	/// Task runner thread handle
-	pthread_t m_thread;
-
 	/// Underlying task queue
 	itask_queue m_queue;
 
-	static void* task_runner(void* task_queue);
+	/// task runner object
+	task_runner m_task_runner;
     };
 
     inline void task_queue::queue_task(itask * const taskp)
