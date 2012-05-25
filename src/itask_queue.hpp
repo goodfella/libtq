@@ -57,6 +57,13 @@ namespace libtq
 	 */
 	bool cancel_task(itask * const task);
 
+	/** Cancels all the tasks that are queued
+	 *
+	 *  @note This method notifies the waiters of each queued
+	 *  task, that the task was canceled.
+	 */
+	void cancel_tasks();
+
 	/** Runs the task at the front of the queue
 	 *
 	 *  Blocks if the queue is empty

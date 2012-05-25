@@ -30,6 +30,12 @@ namespace libtq
 	 */
 	void stop_queue();
 
+	/** Cancels all the queued tasks
+	 *
+	 *  @note This function does not stop the task runner thread.
+	 */
+	void cancel_tasks();
+
 	/** Queues a task
 	 *
 	 *  A task can only be queued once.  So if the task was

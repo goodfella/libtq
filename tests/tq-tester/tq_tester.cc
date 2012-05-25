@@ -43,14 +43,14 @@ int main(int argc, char** argv)
 	}
 
 	tasks.start_tasks();
-	queue_thread.start_thread();
+	queue_thread.start_threads();
 	
 	cout << "press enter to stop test: ";
 	char input;
 	cin.get(input);
 	cout << "received input stopping threads\n";
 
-	queue_thread.stop_thread();
+	queue_thread.stop_threads();
 
 	// stops and joins on all the task threads
 	tasks.stop_tasks();

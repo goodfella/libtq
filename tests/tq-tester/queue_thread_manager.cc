@@ -8,36 +8,41 @@ using namespace std;
 using namespace libtq;
 using namespace tq_tester;
 
-bool_flag queue_thread_manager::m_stop_threads;
+queue_thread_data::queue_thread_data(libtq::task_queue* const q, bool_flag* const f):
+    queue(q),
+    stop_thread(f)
+{}
 
 queue_thread_manager::queue_thread_manager(task_queue* const queue):
-    m_queue(queue)
+    m_data(queue, &m_stop_threads)
 {}
 
 queue_thread_manager::~queue_thread_manager()
 {
-    stop_thread();
+    stop_threads();
 }
 
-void queue_thread_manager::start_thread()
+void queue_thread_manager::start_threads()
 {
-    m_stop_thread.start(queue_thread_manager::queue_thread, m_queue, "stop queue thread");
+    m_stop_start_thread.start(queue_thread_manager::stop_start_queue, &m_data, "stop queue thread");
+    m_cancel_tasks_thread.start(queue_thread_manager::cancel_tasks, &m_data, "cancel tasks thread");
 }
 
-void queue_thread_manager::stop_thread()
+void queue_thread_manager::stop_threads()
 {
     m_stop_threads.set(true);
 
-    m_stop_thread.join();
+    m_stop_start_thread.join();
+    m_cancel_tasks_thread.join();
 }
 
-void* queue_thread_manager::queue_thread(void* q)
+void* queue_thread_manager::stop_start_queue(void* d)
 {
-    task_queue * queue = static_cast<task_queue*>(q);
+    queue_thread_data* data = static_cast<queue_thread_data*>(d);
 
-    while ( m_stop_threads.get() == false )
+    while ( data->stop_thread->get() == false )
     {
-	if( queue->start_queue() )
+	if( data->queue->start_queue() )
 	{
 	    cerr << "error starting task queue\n";
 	    break;
@@ -45,8 +50,21 @@ void* queue_thread_manager::queue_thread(void* q)
 
 	pthread_yield();
 
-	queue->stop_queue();
+	data->queue->stop_queue();
     }
 
-    pthread_exit(NULL);
+    return NULL;
+}
+
+void* queue_thread_manager::cancel_tasks(void* d)
+{
+    queue_thread_data* data = static_cast<queue_thread_data*>(d);
+
+    while( data->stop_thread->get() == false )
+    {
+	data->queue->cancel_tasks();
+	pthread_yield();
+    }
+
+    return NULL;
 }

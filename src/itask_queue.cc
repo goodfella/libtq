@@ -80,6 +80,17 @@ bool itask_queue::cancel_task(itask * const itaskp)
     return ret;
 }
 
+void itask_queue::cancel_tasks()
+{
+    mutex_lock lock(&m_lock);
+
+    while( m_tasks.empty() == false )
+    {
+	task_cleanup cleanup_task(m_tasks.front(), &task::signal_canceled);
+	m_tasks.pop_front();
+    }
+}
+
 int itask_queue::wait_for_task(itask * const taskp)
 {
     task_handle thandle;

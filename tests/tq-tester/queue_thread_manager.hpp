@@ -13,6 +13,14 @@ namespace libtq
 
 namespace tq_tester
 {
+    struct queue_thread_data
+    {
+	queue_thread_data(libtq::task_queue* const q, bool_flag* const f);
+
+	libtq::task_queue* queue;
+	bool_flag* stop_thread;
+    };
+
     class queue_thread_manager
     {
 	public:
@@ -20,16 +28,19 @@ namespace tq_tester
 	queue_thread_manager(libtq::task_queue* const queue);
 	~queue_thread_manager();
 
-	void start_thread();
-	void stop_thread();
+	void start_threads();
+	void stop_threads();
 
 	private:
 
-	libtq::task_queue* m_queue;
-	libtq::thread m_stop_thread;
+	libtq::thread m_stop_start_thread;
+	libtq::thread m_cancel_tasks_thread;
 
-	static bool_flag m_stop_threads;
-	static void* queue_thread(void*);
+	bool_flag m_stop_threads;
+	queue_thread_data m_data;
+
+	static void* stop_start_queue(void* d);
+	static void* cancel_tasks(void* d);
     };
 }
 

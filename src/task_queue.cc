@@ -38,6 +38,15 @@ task_queue::~task_queue()
     pthread_mutex_destroy(&m_shutdown_lock);
 }
 
+void task_queue::cancel_tasks()
+{
+    /* The shutdown lock is taken here to prevent any shutdown tasks
+     * from being canceled */
+    mutex_lock lock(&m_shutdown_lock);
+
+    m_queue.cancel_tasks();
+}
+
 int task_queue::start_queue()
 {
     mutex_lock lock(&m_shutdown_lock);
