@@ -10,6 +10,11 @@ task_runner::task_runner():
 
 int task_runner::start(itask_queue* const queue)
 {
+    if( m_started == true )
+    {
+	return 0;
+    }
+
     int ret = pthread_create(&m_thread, NULL, &task_runner::run_tasks, queue);
     m_started = ret == 0 ? true : false;
 
@@ -24,6 +29,8 @@ void task_runner::join()
     }
 
     pthread_join(m_thread, NULL);
+
+    m_started = false;
 }
 
 void* task_runner::run_tasks(void* q)
