@@ -32,6 +32,20 @@ namespace libtq
 	 */
 	void shutdown_queue();
 
+	/** Stops the task runner thread
+	 *
+	 *  This method stops the task runner thread immediately.
+	 *  After this method is finished there may still be tasks
+	 *  queued.
+	 */
+	void stop_queue();
+
+	/** Cancels any tasks, and stops the runner thread
+	 *
+	 *  This method calls cancel_tasks and stop_queue atomically.
+	 */
+	void cancel_queue();
+
 	/** Cancels all the queued tasks
 	 *
 	 *  @note This function does not stop the task runner thread.
@@ -82,6 +96,9 @@ namespace libtq
 
 	/// task runner object
 	task_runner m_task_runner;
+
+	/// assumes the m_shutdown_lock mutex is locked
+	void locked_stop_queue();
     };
 
     inline void task_queue::queue_task(itask * const taskp)

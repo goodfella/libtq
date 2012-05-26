@@ -1,6 +1,7 @@
 #include "task_runner.hpp"
 #include "itask_queue.hpp"
 #include "shutdown_task.hpp"
+#include "runner_canceled.hpp"
 
 using namespace libtq;
 
@@ -47,6 +48,11 @@ void* task_runner::run_tasks(void* q)
 	catch( const shutdown_exception& ex )
 	{
 	    // Time to shutdown
+	    return NULL;
+	}
+	catch (const runner_canceled& ex )
+	{
+	    // this task runner was canceled
 	    return NULL;
 	}
 

@@ -67,3 +67,33 @@ void task_queue::shutdown_queue()
 
     m_started = false;
 }
+
+void task_queue::locked_stop_queue()
+{
+    if( m_started == false )
+    {
+	return;
+    }
+
+    // Set the cancel flag in the queue and wait until the task runner
+    // exits
+    m_queue.set_cancel();
+    m_task_runner.join();
+    m_queue.clear_cancel();
+
+    m_started = false;
+}
+
+void task_queue::stop_queue()
+{
+    mutex_lock shutdown_lock(&m_shutdown_lock);
+    locked_stop_queue();
+}
+
+void task_queue::cancel_queue()
+{
+    mutex_lock shutdown_lock(&m_shutdown_lock);
+
+    m_queue.cancel_tasks();
+    locked_stop_queue();
+}

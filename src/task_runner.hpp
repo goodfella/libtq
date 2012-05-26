@@ -25,6 +25,10 @@ namespace libtq
 
 	private:
 
+	// No copying allowed since copying a pthread_t is not defined
+	task_runner(const task_runner& rhs);
+	task_runner& operator=(const task_runner& rhs);
+
 	bool m_started;
 	pthread_t m_thread;
 

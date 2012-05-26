@@ -33,14 +33,18 @@ namespace tq_tester
 
 	private:
 
-	libtq::thread m_stop_start_thread;
+	libtq::thread m_shutdown_thread;
 	libtq::thread m_cancel_tasks_thread;
+	libtq::thread m_stop_thread;
+	libtq::thread m_cancel_queue_thread;
 
 	bool_flag m_stop_threads;
 	queue_thread_data m_data;
 
-	static void* stop_start_queue(void* d);
+	static void* shutdown_queue(void* d);
 	static void* cancel_tasks(void* d);
+	static void* stop_queue(void* d);
+	static void* cancel_queue(void* d);
     };
 }
 

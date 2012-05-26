@@ -16,6 +16,7 @@ ADD_LIBRARY(tq
   src/rwlock_rdlock.cc
   src/rwlock_wrlock.cc
   src/task_runner.cc
-  src/shutdown_task.cc)
+  src/shutdown_task.cc
+  src/runner_canceled)
 
 ADD_SUBDIRECTORY(tests)

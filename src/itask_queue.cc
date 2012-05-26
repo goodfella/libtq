@@ -5,11 +5,13 @@
 #include "itask.hpp"
 #include "task_cleanup.hpp"
 #include "mutex_lock.hpp"
+#include "runner_canceled.hpp"
 
 using namespace std;
 using namespace libtq;
 
-itask_queue::itask_queue()
+itask_queue::itask_queue():
+    m_cancel(false)
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
@@ -114,14 +116,41 @@ int itask_queue::wait_for_task(itask * const taskp)
     return 0;
 }
 
+void itask_queue::set_cancel()
+{
+    {
+	mutex_lock lock(&m_lock);
+	m_cancel = true;
+    }
+
+    // Wake up any waiting task runners
+    pthread_cond_broadcast(&m_cond);
+}
+
+void itask_queue::clear_cancel()
+{
+    mutex_lock lock(&m_lock);
+    m_cancel = false;
+}
+
 void itask_queue::run_task()
 {
     mutex_lock lock(&m_lock);
+
+    if( m_cancel == true )
+    {
+	throw runner_canceled();
+    }
 
     while( m_tasks.empty() == true )
     {
 	// wait until the queue is not empty
 	pthread_cond_wait(&m_cond, &m_lock);
+
+	if( m_cancel == true )
+	{
+	    throw runner_canceled();
+	}
     }
 
     // at this point the queue is not empty, and we have the lock from

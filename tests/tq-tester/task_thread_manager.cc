@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include <stdexcept>
 #include <iostream>
 #include <vector>
@@ -103,7 +105,7 @@ void* task_thread_manager::task_cancel_handler(void* t)
 	    desc->taskp->inc_cancelcount();
 	}
 
-	pthread_yield();
+	sleep(1);
     }
 
     pthread_exit(NULL);

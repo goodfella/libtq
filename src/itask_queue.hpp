@@ -70,12 +70,26 @@ namespace libtq
 	 */
 	void run_task();
 
+	/** Sets the cancel predicate
+	 *
+	 *  Calling this function will causes a canceled_runner
+	 *  exception to be thrown in each thread inside run_task.
+	 *  This behavior persists until clear_cancel is called.
+	 */
+	void set_cancel();
+
+	/// Clears the cancel predicate
+	void clear_cancel();
+
 	private:
+
+	/// Set to true when threads in run_task should be canceled
+	bool m_cancel;
 
 	/// List of tasks to run
 	std::list<task_handle> m_tasks;
 
-	/// Protects the m_tasks list.
+	/// Protects the m_tasks list and m_cancel
 	pthread_mutex_t m_lock;
 
 	/// Used to signal a thread waiting on an empty task list
