@@ -50,7 +50,7 @@ void* queue_thread_manager::stop_start_queue(void* d)
 
 	pthread_yield();
 
-	data->queue->stop_queue();
+	data->queue->shutdown_queue();
     }
 
     return NULL;

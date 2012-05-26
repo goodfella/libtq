@@ -24,12 +24,13 @@ namespace libtq
 	 */
 	int start_queue();
 
-	/** Stops the task queue's task runner thread
+	/** Shutdowns the task queue's task runner thread
 	 *
 	 *  The calling thread will block until the task runner has
-	 *  been shut down successfully.
+	 *  been shut down successfully.  This method waits until all
+	 *  the tasks queued at the time it's called are finished.
 	 */
-	void stop_queue();
+	void shutdown_queue();
 
 	/** Cancels all the queued tasks
 	 *
