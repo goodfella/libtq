@@ -135,35 +135,37 @@ void itask_queue::clear_cancel()
 
 void itask_queue::run_task()
 {
-    mutex_lock lock(&m_lock);
+    task_cleanup tcleanup(&task::signal_finished);
 
-    if( m_cancel == true )
     {
-	throw runner_canceled();
-    }
-
-    while( m_tasks.empty() == true )
-    {
-	// wait until the queue is not empty
-	pthread_cond_wait(&m_cond, &m_lock);
+	mutex_lock lock(&m_lock);
 
 	if( m_cancel == true )
 	{
 	    throw runner_canceled();
 	}
+
+	while( m_tasks.empty() == true )
+	{
+	    // wait until the queue is not empty
+	    pthread_cond_wait(&m_cond, &m_lock);
+
+	    if( m_cancel == true )
+	    {
+		throw runner_canceled();
+	    }
+	}
+
+	// at this point the queue is not empty, and we have the lock from
+	// either the mutex_lock at the top, or from the pthread_cond_wait
+	// in the while loop
+
+	// take ownership of the task and remove the old task from the
+	// task list
+	tcleanup = m_tasks.front();
+
+	m_tasks.pop_front();
     }
-
-    // at this point the queue is not empty, and we have the lock from
-    // either the mutex_lock at the top, or from the pthread_cond_wait
-    // in the while loop
-
-    // take ownership of the task and remove the old task from the
-    // task list
-    task_cleanup tcleanup(m_tasks.front(), &task::signal_finished);
-
-    m_tasks.pop_front();
     
-    // unlock the lock, and run the task
-    lock.unlock();
     tcleanup->run_task();
 }

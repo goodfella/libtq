@@ -12,13 +12,21 @@ namespace libtq
 	mutex_lock(pthread_mutex_t* lock);
 	~mutex_lock();
 
-	void unlock();
-	void lock(pthread_mutex_t* lock);
-
 	private:
 
 	pthread_mutex_t* m_lock;
     };
+
+    inline mutex_lock::mutex_lock(pthread_mutex_t* lock):
+	m_lock(lock)
+    {
+	pthread_mutex_lock(m_lock);
+    }
+
+    inline mutex_lock::~mutex_lock()
+    {
+	pthread_mutex_unlock(m_lock);
+    }
 }
 
 #endif
