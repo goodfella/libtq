@@ -20,7 +20,7 @@ task_queue::task_queue():
 
 task_queue::~task_queue()
 {
-    shutdown_queue();
+    stop_queue();
     pthread_mutex_destroy(&m_shutdown_lock);
 }
 
