@@ -99,6 +99,10 @@ namespace libtq
 
 	/// assumes the m_shutdown_lock mutex is locked
 	void locked_stop_queue();
+
+	/// Copying is prohibited
+	task_queue(const task_queue&);
+	task_queue& operator =(const task_queue&);
     };
 
     inline void task_queue::queue_task(itask * const taskp)
