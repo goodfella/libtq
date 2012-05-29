@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <vector>
 
 #include "itask_queue.hpp"
 #include "task.hpp"
@@ -84,12 +85,24 @@ bool itask_queue::cancel_task(itask * const itaskp)
 
 void itask_queue::cancel_tasks()
 {
-    mutex_lock lock(&m_lock);
+    vector<task_handle> handles;
 
-    while( m_tasks.empty() == false )
     {
-	task_cleanup cleanup_task(m_tasks.front(), &task::signal_canceled);
-	m_tasks.pop_front();
+	mutex_lock lock(&m_lock);
+
+	handles.resize(m_tasks.size());
+
+	// copy the task_handles so we can signal their cancelation
+	// without m_lock held
+	copy(m_tasks.begin(), m_tasks.end(), handles.begin());
+
+	m_tasks.clear();
+    }
+
+    while( handles.empty() == false )
+    {
+	task_cleanup cleanup(handles.back(), &task::signal_canceled);
+	handles.pop_back();
     }
 }
 
