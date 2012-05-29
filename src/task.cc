@@ -57,11 +57,19 @@ void task::signal_finished()
 
 void task::signal_canceled()
 {
+    itask* itaskp;
+
     {
 	mutex_lock lock(&m_state_lock);
 	m_canceled = true;
     }
 
+    {
+	rwlock_rdlock lock(&m_task_lock);
+	itaskp = m_task;
+    }
+
+    itaskp->canceled();
     pthread_cond_broadcast(&m_cond);
 }
 

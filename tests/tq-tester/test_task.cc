@@ -22,11 +22,6 @@ void test_task::inc_counter(unsigned long& counter)
     pthread_mutex_unlock(&m_lock);
 }
 
-void test_task::inc_runcount()
-{
-    inc_counter(m_runcount);
-}
-
 const unsigned long test_task::counter(const unsigned long& counter) const
 {
     unsigned long temp;
@@ -56,12 +51,12 @@ void test_task::inc_waitcount()
     inc_counter(m_waitcount);
 }
 
-void test_task::inc_cancelcount()
-{
-    inc_counter(m_cancelcount);
-}
-
 void test_task::run()
 {
-    inc_runcount();
+    inc_counter(m_runcount);
+}
+
+void test_task::canceled()
+{
+    inc_counter(m_cancelcount);
 }

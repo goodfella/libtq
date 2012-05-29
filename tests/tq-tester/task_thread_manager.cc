@@ -100,11 +100,7 @@ void* task_thread_manager::task_cancel_handler(void* t)
 
     while( desc->stop_thread->get() == false )
     {
-	if( desc->queue->cancel_task(desc->taskp) == true )
-	{
-	    desc->taskp->inc_cancelcount();
-	}
-
+	desc->queue->cancel_task(desc->taskp);
 	sleep(1);
     }
 

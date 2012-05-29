@@ -7,8 +7,9 @@ namespace libtq
     {
 	public:
 
-	    virtual ~itask() {}
-	    virtual void run() = 0;
+	virtual ~itask();
+	virtual void run() = 0;
+	virtual void canceled();
     };
 }
 
