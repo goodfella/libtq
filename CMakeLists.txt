@@ -12,8 +12,6 @@ ADD_LIBRARY(tq
   src/task_handle.cc
   src/task_allocator.cc
   src/task.cc
-  src/rwlock_rdlock.cc
-  src/rwlock_wrlock.cc
   src/task_runner.cc
   src/shutdown_task.cc
   src/runner_canceled.cc

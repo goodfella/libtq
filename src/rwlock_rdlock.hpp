@@ -14,6 +14,17 @@ namespace libtq
 
 	pthread_rwlock_t* m_lock;
     };
+
+    inline rwlock_rdlock::rwlock_rdlock(pthread_rwlock_t* lock):
+	m_lock(lock)
+    {
+	pthread_rwlock_rdlock(lock);
+    }
+
+    inline rwlock_rdlock::~rwlock_rdlock()
+    {
+	pthread_rwlock_unlock(m_lock);
+    }
 }
 
 #endif
