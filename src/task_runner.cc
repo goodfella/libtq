@@ -1,6 +1,5 @@
 #include "task_runner.hpp"
 #include "itask_queue.hpp"
-#include "shutdown_task.hpp"
 #include "runner_canceled.hpp"
 
 using namespace libtq;
@@ -45,14 +44,9 @@ void* task_runner::run_tasks(void* q)
 	    // run_task will block until a task is available
 	    queue->run_task();
 	}
-	catch( const shutdown_exception& ex )
-	{
-	    // Time to shutdown
-	    return NULL;
-	}
 	catch (const runner_canceled& ex )
 	{
-	    // this task runner was canceled
+	    // task runner was canceled
 	    return NULL;
 	}
 
