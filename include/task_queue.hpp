@@ -27,6 +27,12 @@ namespace libtq
      *  have a strong exception guarantee in that if an exception is thrown,
      *  the task queue is in exactly the same state it was before the method
      *  was called.
+     *
+     *  @par Thread Safety: It is safe to call task queue methods from
+     *  multiple threads.  However, special care must be taken when a
+     *  task queue's destructor is invoked.  Calling methods of a task
+     *  queue that's being destroyed, or having tasks queued while a
+     *  task queue is being destroyed are both undefined.
      */
     class task_queue
     {
