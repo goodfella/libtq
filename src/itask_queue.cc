@@ -59,7 +59,7 @@ bool itask_queue::cancel_task(itask * const itaskp)
 
     {
 	// we have a separate scope here so the lock is unlocked when
-	// the waiters are signaled
+	// itask::canceled is called
 	mutex_lock lock(&m_lock);
 
 	if( m_tasks.empty() == true )
@@ -149,8 +149,8 @@ void itask_queue::run_task()
 	// from either the mutex_lock at the top, or from the
 	// pthread_cond_wait in the while loop
 
-	// Get a copy of the task pointer and remove the old task from
-	// the task list
+	// Get a copy of the task pointer and remove the task from the
+	// task list
 	task = m_tasks.front();
 	m_tasks.pop_front();
     }

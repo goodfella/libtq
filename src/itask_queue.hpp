@@ -56,7 +56,7 @@ namespace libtq
 
 	/** Sets the cancel predicate
 	 *
-	 *  Calling this function will causes a canceled_runner
+	 *  Calling this function will cause a canceled_runner
 	 *  exception to be thrown in each thread inside run_task.
 	 *  This behavior persists until clear_cancel is called.
 	 */
