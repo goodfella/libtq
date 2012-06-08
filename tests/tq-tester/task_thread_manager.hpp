@@ -42,15 +42,11 @@ namespace tq_tester
 	task_thread_data m_desc;
 
 	libtq::thread m_sch_thread;
-	libtq::thread m_sch_wait_thread;
 	libtq::thread m_cancel_thread;
-	libtq::thread m_wait_thread;
 	libtq::thread m_scheduler_thread;
 
 	static void* task_sch_handler(void* task);
-	static void* task_sch_wait_handler(void* task);
 	static void* task_cancel_handler(void* task);
-	static void* task_wait_handler(void* task);
 	static void* task_scheduler(void* data);
     };
 }

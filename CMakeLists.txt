@@ -8,10 +8,6 @@ ADD_LIBRARY(tq
   STATIC
   src/task_queue.cc
   src/itask_queue.cc
-  src/task_cleanup.cc
-  src/task_handle.cc
-  src/task_allocator.cc
-  src/task.cc
   src/task_runner.cc
   src/shutdown_task.cc
   src/runner_canceled.cc

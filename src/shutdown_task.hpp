@@ -1,14 +1,27 @@
 #ifndef SHUTDOWN_TASK_HPP
 #define SHUTDOWN_TASK_HPP
 
+#include <pthread.h>
 #include "itask.hpp"
 
 namespace libtq
 {
     /// Task class that throws the shutdown exception
-    struct shutdown_task : public itask
+    class shutdown_task : public itask
     {
+	public:
+
+	shutdown_task();
+	~shutdown_task();
+
 	void run();
+	void wait_for_completion();
+
+	private:
+
+	bool m_finished;
+	pthread_mutex_t m_lock;
+	pthread_cond_t m_cond;
     };
 }
 

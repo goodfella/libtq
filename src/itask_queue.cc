@@ -1,10 +1,9 @@
 #include <algorithm>
+#include <functional>
 #include <vector>
 
 #include "itask_queue.hpp"
-#include "task.hpp"
 #include "itask.hpp"
-#include "task_cleanup.hpp"
 #include "mutex_lock.hpp"
 #include "runner_canceled.hpp"
 
@@ -37,7 +36,7 @@ void itask_queue::queue_task(itask * const itaskp)
 	if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
 	{
 	    // The task is not already scheduled
-	    m_tasks.push_back(task_handle(m_allocator.alloc(itaskp), &m_allocator));
+	    m_tasks.push_back(itaskp);
 
 	    // task queue was empty signal the task runner
 	    if( m_tasks.size() == 1 )
@@ -56,7 +55,6 @@ void itask_queue::queue_task(itask * const itaskp)
 
 bool itask_queue::cancel_task(itask * const itaskp)
 {
-    task_cleanup tcleanup(&task::signal_canceled);
     bool ret = false;
 
     {
@@ -70,14 +68,19 @@ bool itask_queue::cancel_task(itask * const itaskp)
 	    return false;
 	}
 
-	list<task_handle>::iterator th = find(m_tasks.begin(), m_tasks.end(), itaskp);
+	list<itask*>::iterator th = find(m_tasks.begin(), m_tasks.end(), itaskp);
 
 	if( th != m_tasks.end() )
 	{
-	    tcleanup = *th;
 	    m_tasks.erase(th);
 	    ret = true;
 	}
+    }
+
+    if( ret == true )
+    {
+	// The task was in the queue, so tell it that it's canceled
+	itaskp->canceled();
     }
 
     return ret;
@@ -85,48 +88,21 @@ bool itask_queue::cancel_task(itask * const itaskp)
 
 void itask_queue::cancel_tasks()
 {
-    vector<task_handle> handles;
+    vector<itask*> tasks;
 
     {
 	mutex_lock lock(&m_lock);
 
-	handles.resize(m_tasks.size());
+	tasks.resize(m_tasks.size());
 
-	// copy the task_handles so we can signal their cancelation
+	// copy the task pointers so we can signal their cancelation
 	// without m_lock held
-	copy(m_tasks.begin(), m_tasks.end(), handles.begin());
+	copy(m_tasks.begin(), m_tasks.end(), tasks.begin());
 
 	m_tasks.clear();
     }
 
-    while( handles.empty() == false )
-    {
-	task_cleanup cleanup(handles.back(), &task::signal_canceled);
-	handles.pop_back();
-    }
-}
-
-int itask_queue::wait_for_task(itask * const taskp)
-{
-    task_handle thandle;
-
-    {
-	mutex_lock lock(&m_lock);
-
-	list<task_handle>::iterator th = find(m_tasks.begin(), m_tasks.end(), taskp);
-
-	if( th != m_tasks.end() )
-	{
-	    thandle = *th;
-	}
-    }
-
-    if( thandle.is_set() == true )
-    {
-	return (thandle->wait_for_task() == true ? 1 : -1);
-    }
-
-    return 0;
+    for_each(tasks.begin(), tasks.end(), mem_fun(&itask::canceled));
 }
 
 void itask_queue::set_cancel()
@@ -148,7 +124,7 @@ void itask_queue::clear_cancel()
 
 void itask_queue::run_task()
 {
-    task_cleanup tcleanup(&task::signal_finished);
+    itask* task = NULL;
 
     {
 	mutex_lock lock(&m_lock);
@@ -169,16 +145,15 @@ void itask_queue::run_task()
 	    }
 	}
 
-	// at this point the queue is not empty, and we have the lock from
-	// either the mutex_lock at the top, or from the pthread_cond_wait
-	// in the while loop
+	// At this point the queue is not empty, and we have the lock
+	// from either the mutex_lock at the top, or from the
+	// pthread_cond_wait in the while loop
 
-	// take ownership of the task and remove the old task from the
-	// task list
-	tcleanup = m_tasks.front();
-
+	// Get a copy of the task pointer and remove the old task from
+	// the task list
+	task = m_tasks.front();
 	m_tasks.pop_front();
     }
     
-    tcleanup->run_task();
+    task->run();
 }

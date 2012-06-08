@@ -5,8 +5,6 @@
 #include "task_queue.hpp"
 #include "itask.hpp"
 #include "mutex_lock.hpp"
-#include "task.hpp"
-#include "task_cleanup.hpp"
 #include "shutdown_task.hpp"
 
 using namespace std;
@@ -61,7 +59,7 @@ void task_queue::shutdown_queue()
 
     // queue and wait for the shutdown task to finish
     queue_task(&kill_task_runner);
-    wait_for_task(&kill_task_runner);
+    kill_task_runner.wait_for_completion();
 
     m_task_runner.join();
 

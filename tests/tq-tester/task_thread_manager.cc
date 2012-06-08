@@ -25,9 +25,7 @@ task_thread_manager::task_thread_manager(const string& label, task_queue * const
 void task_thread_manager::start_threads()
 {
     m_sch_thread.start(&task_thread_manager::task_sch_handler, &m_desc, "task scheduler");
-    m_sch_wait_thread.start(&task_thread_manager::task_sch_wait_handler, &m_desc, "task wait scheduler");
     m_cancel_thread.start(&task_thread_manager::task_cancel_handler, &m_desc, "task canceler");
-    m_wait_thread.start(&task_thread_manager::task_wait_handler, &m_desc, "task waiter");
     m_scheduler_thread.start(&task_thread_manager::task_scheduler, &m_desc, "task schedular");
 }
 
@@ -41,13 +39,11 @@ void task_thread_manager::stop_threads()
 
     // make sure all the threads are stopped
     m_sch_thread.join();
-    m_sch_wait_thread.join();
     m_cancel_thread.join();
-    m_wait_thread.join();
     m_scheduler_thread.join();
 
-    // wait for the task to finish
-    m_desc.queue->wait_for_task(&m_task);
+    // cancel the task if it's still queued
+    m_desc.queue->cancel_tasks();
 }
 
 task_thread_manager::~task_thread_manager()
@@ -58,8 +54,7 @@ task_thread_manager::~task_thread_manager()
 void task_thread_manager::print_stats() const
 {
     cout << m_label << " run count = " << m_task.runcount() << endl
-	 << m_label << " cancel count = " << m_task.cancelcount() << endl
-	 << m_label << " wait count = " << m_task.waitcount() << endl << endl;
+	 << m_label << " cancel count = " << m_task.cancelcount() << endl << endl;
 }
 
 void* task_thread_manager::task_sch_handler(void* t)
@@ -69,25 +64,6 @@ void* task_thread_manager::task_sch_handler(void* t)
     while( desc->stop_thread->get() == false )
     {
 	desc->queue->queue_task(desc->taskp);
-	pthread_yield();
-    };
-
-    pthread_exit(NULL);
-}
-
-void* task_thread_manager::task_sch_wait_handler(void* t)
-{
-    task_thread_data* desc = static_cast<task_thread_data*>(t);
-
-    while( desc->stop_thread->get() == false )
-    {
-	desc->queue->queue_task(desc->taskp);
-
-	if( desc->queue->wait_for_task(desc->taskp) > 0 )
-	{
-	    desc->taskp->inc_waitcount();
-	}
-
 	pthread_yield();
     };
 
@@ -107,23 +83,6 @@ void* task_thread_manager::task_cancel_handler(void* t)
     pthread_exit(NULL);
 }
 
-void* task_thread_manager::task_wait_handler(void* t)
-{
-    task_thread_data* desc = static_cast<task_thread_data*>(t);
-
-    while( desc->stop_thread->get() == false )
-    {
-	if( desc->queue->wait_for_task(desc->taskp) > 0 )
-	{
-	    desc->taskp->inc_waitcount();
-	}
-
-	pthread_yield();
-    };
-
-    pthread_exit(NULL);
-}
-
 void* task_thread_manager::task_scheduler(void* d)
 {
     task_thread_data* data = static_cast<task_thread_data*>(d);
@@ -138,13 +97,13 @@ void* task_thread_manager::task_scheduler(void* d)
 	{
 	    data->queue->queue_task(&(*i));
 	}
+    }
 
-	for(vector<test_task>::iterator i = tasks.begin();
-	    i != tasks.end();
-	    ++i)
-	{
-	    data->queue->wait_for_task(&(*i));
-	}
+    for(vector<test_task>::iterator i = tasks.begin();
+	i != tasks.end();
+	++i)
+    {
+	data->queue->cancel_task(&(*i));
     }
 
     return NULL;

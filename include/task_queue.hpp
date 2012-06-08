@@ -10,11 +10,7 @@ namespace libtq
 {
     class itask;
 
-    /** Queues and waits on individual tasks
-     *
-     *  This task queue allows threads to wait on arbitrary tasks
-     *  without affecting the task runner thread.  Note that there is
-     *  a little extra overhead to support waiting on arbitrary tasks.
+    /** Runs tasks in order of first in, first out
      *
      *  @exception std::exception Unless specifically noted in a
      *  method's documentation, task_queue methods make no attempt to
@@ -28,11 +24,12 @@ namespace libtq
      *  the task queue is in exactly the same state it was before the method
      *  was called.
      *
-     *  @par Thread Safety: It is safe to call task queue methods from
-     *  multiple threads.  However, special care must be taken when a
-     *  task queue's destructor is invoked.  Calling methods of a task
-     *  queue that's being destroyed, or having tasks queued while a
-     *  task queue is being destroyed are both undefined.
+     *  @par Thread Safety:
+     *  It is safe to call task queue methods from multiple threads.
+     *  However, special care must be taken when a task queue's
+     *  destructor is invoked.  Calling methods of a task queue that's
+     *  being destroyed, or having tasks queued while a task queue is
+     *  being destroyed are both undefined.
      */
     class task_queue
     {
@@ -92,26 +89,10 @@ namespace libtq
 	 */
 	void queue_task(itask * const task);
 
-	/** Waits for a task to complete
-	 *
-	 *  The calling thread will block until the task execution
-	 *  completes or the task is canceled.  If the task is not
-	 *  already queued, this function exits immediately.
-	 *
-	 *  @return Greater than zero if the task was executed while
-	 *  being waited on, less than zero if the task was canceled
-	 *  while being waited on, or zero if the task was not already
-	 *  scheduled.
-	 *
-	 *  @par Exception Safety:
-	 *  This method has a no-throw guarantee.
-	 */
-	int wait_for_task(itask * const task);
-
 	/** Cancels the execution of a task
 	 *
-	 *  Cancels a previously queued task, and notifies all the
-	 *  threads waiting on the task that the task was canceled.
+	 *  Cancels a previously queued task, and calls the itask's
+	 *  canceled method.
 	 *
 	 *  @return True if the task was canceled, false if the task
 	 *  was not scheduled at the time this method was called.
@@ -146,11 +127,6 @@ namespace libtq
     inline void task_queue::queue_task(itask * const taskp)
     {
 	m_queue.queue_task(taskp);
-    }
-
-    inline int task_queue::wait_for_task(itask * const taskp)
-    {
-	return m_queue.wait_for_task(taskp);
     }
 
     inline bool task_queue::cancel_task(itask * const taskp)

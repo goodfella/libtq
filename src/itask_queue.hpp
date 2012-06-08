@@ -4,9 +4,6 @@
 #include <pthread.h>
 #include <list>
 
-#include "task_handle.hpp"
-#include "task_allocator.hpp"
-
 namespace libtq
 {
     class itask;
@@ -33,19 +30,6 @@ namespace libtq
 	 *  not queue the task a second time.
 	 */
 	void queue_task(itask * const task);
-
-	/** Waits for a task to complete
-	 *
-	 *  The calling thread will block until the task execution
-	 *  completes.  If the task is not already queued, this
-	 *  function exits immediately.
-	 *
-	 *  @return greater than zero if the task was executed while
-	 *  being waited on, less than zero if the task was canceled
-	 *  while being waited on, or zero if the task was not already
-	 *  scheduled.
-	 */
-	int wait_for_task(itask * const task);
 
 	/** Cancels the execution of a task
 	 *
@@ -87,16 +71,13 @@ namespace libtq
 	bool m_cancel;
 
 	/// List of tasks to run
-	std::list<task_handle> m_tasks;
+	std::list<itask*> m_tasks;
 
 	/// Protects the m_tasks list and m_cancel
 	pthread_mutex_t m_lock;
 
 	/// Used to signal a thread waiting on an empty task list
 	pthread_cond_t m_cond;
-
-	/// allocator for task objects
-	task_allocator m_allocator;
     };
 }
 
