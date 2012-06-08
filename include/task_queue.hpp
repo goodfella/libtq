@@ -6,12 +6,13 @@
 #include "itask_queue.hpp"
 #include "task_runner.hpp"
 
+/// Namespace where all the task queue classes and methods exist
 namespace libtq
 {
     class itask;
 
-    /** Runs tasks in order of first in, first out
-     *
+    /// Runs tasks in order of first in, first out
+    /*
      *  @exception std::exception Unless specifically noted in a
      *  method's documentation, task_queue methods make no attempt to
      *  catch any exception thrown from the underlying STL container.
