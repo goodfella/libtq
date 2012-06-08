@@ -33,8 +33,8 @@ namespace libtq
 
 	/** Cancels the execution of a task
 	 *
-	 *  Cancels a previously queued task, and notifies all the
-	 *  threads waiting on the task that the task is complete.
+	 *  Cancels a previously queued task, and calls the canceled
+	 *  method of the itask object.
 	 *
 	 *  @return true if the task was canceled, false if the task
 	 *  was not scheduled at the time this method was called.
