@@ -13,6 +13,10 @@ class signal_finished
 
     private:
 
+    // no copying
+    signal_finished(const signal_finished& rhs);
+    signal_finished& operator=(const signal_finished& rhs);
+
     pthread_cond_t* m_condition;
     pthread_mutex_t* m_mutex;
     bool* m_predicate;

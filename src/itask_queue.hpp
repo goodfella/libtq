@@ -67,6 +67,10 @@ namespace libtq
 
 	private:
 
+	// No copying allowed
+	itask_queue(const itask_queue& rhs);
+	itask_queue& operator=(const itask_queue& rhs);
+
 	/// Set to true when threads in run_task should be canceled
 	bool m_cancel;
 

@@ -19,6 +19,10 @@ namespace libtq
 
 	private:
 
+	// no copying allowed
+	shutdown_task(const shutdown_task& rhs);
+	shutdown_task& operator=(const shutdown_task& rhs);
+
 	bool m_finished;
 	pthread_mutex_t m_lock;
 	pthread_cond_t m_cond;

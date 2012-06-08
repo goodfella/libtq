@@ -14,6 +14,10 @@ namespace libtq
 
 	private:
 
+	// no copying allowed
+	mutex_lock(const mutex_lock& rhs);
+	mutex_lock& operator=(const mutex_lock& rhs);
+
 	pthread_mutex_t* m_lock;
     };
 
