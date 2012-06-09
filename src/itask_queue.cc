@@ -11,14 +11,17 @@ using namespace std;
 using namespace libtq;
 
 itask_queue::itask_queue():
-    m_cancel(false)
+    m_cancel(false),
+    m_canceling(false)
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
+    pthread_cond_init(&m_cancel_cond, NULL);
 }
 
 itask_queue::~itask_queue()
 {
+    pthread_cond_destroy(&m_cancel_cond);
     pthread_cond_destroy(&m_cond);
     pthread_mutex_destroy(&m_lock);
 }
@@ -55,33 +58,57 @@ void itask_queue::queue_task(itask * const itaskp)
 
 bool itask_queue::cancel_task(itask * const itaskp)
 {
+    // Used to determine whether or not itaskp needs to be canceled
     bool ret = false;
 
     {
-	// we have a separate scope here so the lock is unlocked when
-	// itask::canceled is called
 	mutex_lock lock(&m_lock);
+
+	// Only one thread at a time is allowed to cancel a task.  A
+	// condition is used here because itask::canceled should be
+	// called without any locks held
+	while( m_canceling == true )
+	{
+	    pthread_cond_wait(&m_cancel_cond, &m_lock);
+	}
+
+	// This thread is now canceling tasks, so set m_canceling so
+	// other threads block until they're signaled
+	m_canceling = true;
 
 	if( m_tasks.empty() == true )
 	{
-	    // the task queue is empty, so there's no task to cancel
-	    return false;
+	    // The task queue is empty, so there's no task to cancel
+	    ret = false;
 	}
-
-	list<itask*>::iterator th = find(m_tasks.begin(), m_tasks.end(), itaskp);
-
-	if( th != m_tasks.end() )
+	else
 	{
-	    m_tasks.erase(th);
-	    ret = true;
+	    // Search for the task to cancel
+	    list<itask*>::iterator th = find(m_tasks.begin(), m_tasks.end(), itaskp);
+
+	    if( th != m_tasks.end() )
+	    {
+		m_tasks.erase(th);
+		ret = true;
+	    }
 	}
     }
 
     if( ret == true )
     {
-	// The task was in the queue, so tell it that it's canceled
+	// itaskp was in the queue, so cancel it
 	itaskp->canceled();
     }
+
+    {
+	// Clear m_canceling so another thread can cancel tasks
+	mutex_lock lock(&m_lock);
+	m_canceling = false;
+    }
+
+    // signal only one thread because only one thread at a time is
+    // allowed to cancel tasks
+    pthread_cond_signal(&m_cancel_cond);
 
     return ret;
 }
@@ -93,16 +120,43 @@ void itask_queue::cancel_tasks()
     {
 	mutex_lock lock(&m_lock);
 
-	tasks.resize(m_tasks.size());
+	// Wait until no other thread is canceling a task
+	while( m_canceling == true )
+	{
+	    pthread_cond_wait(&m_cancel_cond, &m_lock);
+	}
 
-	// copy the task pointers so we can signal their cancelation
-	// without m_lock held
+	m_canceling = true;
+
+	// resize can throw an exception, so catch it to set
+	// m_canceling back to false
+	try
+	{
+	    tasks.resize(m_tasks.size());
+	}
+	catch(std::exception& ex)
+	{
+	    m_canceling = false;
+	    throw;
+	}
+
+	// Copy the tasks so they can be canceled and clear the
+	// original task list
 	copy(m_tasks.begin(), m_tasks.end(), tasks.begin());
-
 	m_tasks.clear();
     }
 
+    // Cancel each task
     for_each(tasks.begin(), tasks.end(), mem_fun(&itask::canceled));
+
+    {
+	// clear m_canceling so other threads can cancel tasks
+	mutex_lock lock(&m_lock);
+	m_canceling = false;
+    }
+
+    // signal one thread waiting to cancel tasks
+    pthread_cond_signal(&m_cancel_cond);
 }
 
 void itask_queue::set_cancel()

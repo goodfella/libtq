@@ -74,6 +74,9 @@ namespace libtq
 	/// Set to true when threads in run_task should be canceled
 	bool m_cancel;
 
+	/// Set to true when a thread is in either cancel_tasks or cancel_task
+	bool m_canceling;
+
 	/// List of tasks to run
 	std::list<itask*> m_tasks;
 
@@ -82,6 +85,9 @@ namespace libtq
 
 	/// Used to signal a thread waiting on an empty task list
 	pthread_cond_t m_cond;
+
+	/// Used to signal threads when a cancel method is finished
+	pthread_cond_t m_cancel_cond;
     };
 }
 
