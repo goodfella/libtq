@@ -43,8 +43,10 @@ void task_thread_manager::stop_threads()
     m_scheduler_thread.join();
 
     // cancel the task if it's still queued
-    m_desc.queue->cancel_tasks();
-    m_desc.queue->wait_for_tasks();
+    if( m_desc.queue->cancel_task(&m_task) == false )
+    {
+	m_desc.queue->wait_for_tasks();
+    }
 }
 
 task_thread_manager::~task_thread_manager()
