@@ -6,6 +6,7 @@
 #include "itask.hpp"
 #include "mutex_lock.hpp"
 #include "shutdown_task.hpp"
+#include "wait_task.hpp"
 
 using namespace std;
 using namespace libtq;
@@ -64,6 +65,13 @@ void task_queue::shutdown_queue()
     m_task_runner.join();
 
     m_started = false;
+}
+
+void task_queue::wait_for_tasks()
+{
+    wait_task waiter;
+    m_queue.queue_task(&waiter);
+    waiter.wait();
 }
 
 void task_queue::locked_stop_queue()

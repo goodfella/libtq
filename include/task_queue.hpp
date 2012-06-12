@@ -96,12 +96,23 @@ namespace libtq
 	 *  canceled method.
 	 *
 	 *  @return True if the task was canceled, false if the task
-	 *  was not scheduled at the time this method was called.
+	 *  was not scheduled at the time this method was called or if
+	 *  the task was being ran at the time this method was called.
+	 *  If this method returns false, it may be necessary to call
+	 *  task_queue::wait_for_tasks because the canceled task may
+	 *  be running at the time this method was called.  Calling
+	 *  task_queue::wait_for_tasks in the aforementioned scenario
+	 *  insures that the task queue does not have a reference to
+	 *  the task given that the task is no longer being scheduled
+	 *  by another thread.
 	 *
 	 *  @par Exception Safety:
 	 *  This method has a no-throw guarantee.
 	 */
 	bool cancel_task(itask * const task);
+
+	/// Waits for all the tasks in the task queue to be ran
+	void wait_for_tasks();
 
 	private:
 

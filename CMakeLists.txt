@@ -11,6 +11,7 @@ ADD_LIBRARY(tq
   src/task_runner.cc
   src/shutdown_task.cc
   src/runner_canceled.cc
+  src/wait_task.cc
   src/itask.cc)
 
 ADD_SUBDIRECTORY(tests)

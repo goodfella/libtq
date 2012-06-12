@@ -40,6 +40,15 @@ namespace libtq
 	 *  is allowed to leave this method.
 	 */ 
 	virtual void canceled();
+
+	/// Called when the task is scheduled on the queue
+	/**
+	 *  @note This method is only called once per run.  So if the
+	 *  task has been scheduled, but not yet ran, and the task is
+	 *  scheduled again, this method is not called again.  No
+	 *  task_queue methods can be called from this method.
+	 */
+	virtual void scheduled();
     };
 }
 

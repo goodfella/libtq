@@ -40,6 +40,9 @@ void itask_queue::queue_task(itask * const itaskp)
 	    // The task is not already scheduled
 	    m_tasks.push_back(itaskp);
 
+	    // Notify the task that it's been scheduled
+	    itaskp->scheduled();
+
 	    // task queue was empty signal the task runner
 	    if( m_tasks.size() == 1 )
 	    {
