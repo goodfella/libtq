@@ -44,16 +44,11 @@ wait_task::~wait_task()
 
 void wait_task::run()
 {
-    // increment the counter, and signal the waiting threads
+    mutex_lock lock(&m_lock);
 
-    {
-	mutex_lock lock(&m_lock);
-	++m_counter;
-	m_scheduled = false;
-    }
+    ++m_counter;
+    m_scheduled = false;
 
-    // Signal the waiting threads if the task was ran after being
-    // scheduled
     pthread_cond_broadcast(&m_cond);
 }
 

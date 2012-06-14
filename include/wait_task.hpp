@@ -53,6 +53,10 @@ namespace libtq
 
 	private:
 
+	// This class is not copyable
+	wait_task(const wait_task& rhs);
+	wait_task& operator =(const wait_task& rhs);
+
 	// Used by the waiters to know when the task has been ran
 	int m_counter;
 	bool m_scheduled;
