@@ -5,6 +5,7 @@
 
 #include "itask_queue.hpp"
 #include "task_runner.hpp"
+#include "wait_task.hpp"
 
 /// Namespace where all the task queue classes and methods exist
 namespace libtq
@@ -127,6 +128,9 @@ namespace libtq
 
 	/// task runner object
 	task_runner m_task_runner;
+
+	/// wait_task object used for wait_for_tasks
+	wait_task m_wait_task;
 
 	/// assumes the m_shutdown_lock mutex is locked
 	void locked_stop_queue();

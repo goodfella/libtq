@@ -69,9 +69,10 @@ void task_queue::shutdown_queue()
 
 void task_queue::wait_for_tasks()
 {
-    wait_task waiter;
-    m_queue.queue_task(&waiter);
-    waiter.wait();
+    mutex_lock lock(&m_shutdown_lock);
+
+    m_queue.queue_task(&m_wait_task);
+    m_wait_task.wait();
 }
 
 void task_queue::locked_stop_queue()
