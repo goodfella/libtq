@@ -38,10 +38,18 @@ namespace libtq
 	virtual void canceled();
 
 	/// Called when the task is scheduled
-	void scheduled();
+	/**
+	 *  @note Classes that override this method need to call
+	 *  wait_task::scheduled at some point in their version of it.
+	 */
+	virtual void scheduled();
 
 	/// Waits until either wait_task::run or wait_task::canceled is called
-	void wait();
+	/**
+	 *  @note Classes that override this method need to call
+	 *  wait_task::wait in order to wait on the task.
+	 */
+	virtual void wait();
 
 	/// Returns a wait_task::cleanup
 	/**
