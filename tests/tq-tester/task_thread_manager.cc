@@ -100,6 +100,8 @@ void* task_thread_manager::task_scheduler(void* d)
 	{
 	    data->queue->queue_task(&(*i));
 	}
+
+	pthread_yield();
     }
 
     for(vector<test_task>::iterator i = tasks.begin();
