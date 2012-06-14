@@ -10,12 +10,15 @@
 using namespace std;
 using namespace libtq;
 
-itask_queue::itask_queue():
-    m_cancel(false)
+itask_queue::itask_queue()
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_mutex_init(&m_cancel_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
+
+    mutex_lock lock(&m_lock);
+
+    m_cancel = false;
 }
 
 itask_queue::~itask_queue()

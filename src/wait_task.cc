@@ -28,12 +28,15 @@ wait_task::cleanup& wait_task::cleanup::operator= (const wait_task::cleanup& rhs
     return *this;
 }
 
-wait_task::wait_task():
-    m_counter(0),
-    m_scheduled(false)
+wait_task::wait_task()
 {
     pthread_mutex_init(&m_lock, NULL);
     pthread_cond_init(&m_cond, NULL);
+
+    mutex_lock lock(&m_lock);
+
+    m_counter = 0;
+    m_scheduled = false;
 }
 
 wait_task::~wait_task()

@@ -11,10 +11,13 @@
 using namespace std;
 using namespace libtq;
 
-task_queue::task_queue():
-    m_started(false)
+task_queue::task_queue()
 {
     pthread_mutex_init(&m_shutdown_lock, NULL);
+
+    mutex_lock lock(&m_shutdown_lock);
+
+    m_started = false;
 }
 
 task_queue::~task_queue()
