@@ -103,6 +103,12 @@ void itask_queue::cancel_tasks()
     {
 	mutex_lock lock(&m_lock);
 
+	if( m_tasks.empty() == true )
+	{
+	    // Exit early if there are no tasks scheduled
+	    return;
+	}
+
 	tasks.resize(m_tasks.size());
 
 	// Copy the tasks so they can be canceled and clear the
