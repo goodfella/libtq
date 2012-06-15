@@ -45,7 +45,7 @@ void task_thread_manager::stop_threads()
     // cancel the task if it's still queued
     if( m_desc.queue->cancel_task(&m_task) == false )
     {
-	m_desc.queue->wait_for_tasks();
+	m_desc.queue->flush();
     }
 }
 
@@ -111,7 +111,7 @@ void* task_thread_manager::task_scheduler(void* d)
 	data->queue->cancel_task(&(*i));
     }
 
-    data->queue->wait_for_tasks();
+    data->queue->flush();
 
     return NULL;
 }

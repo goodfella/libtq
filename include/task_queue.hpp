@@ -40,12 +40,8 @@ namespace libtq
 	task_queue();
 	~task_queue();
 
-	/** Starts the task queue's task runner thread
-	 *
-	 *  @return Zero if the task runner thread was successfully
-	 *  started, non-zero otherwise.
-	 */
-	int start_queue();
+	/// Starts the task queue's task runner thread
+	void start_queue();
 
 	/** Shutdowns the task queue's task runner thread
 	 *
@@ -100,20 +96,30 @@ namespace libtq
 	 *  was not scheduled at the time this method was called or if
 	 *  the task was being ran at the time this method was called.
 	 *  If this method returns false, it may be necessary to call
-	 *  task_queue::wait_for_tasks because the canceled task may
-	 *  be running at the time this method was called.  Calling
-	 *  task_queue::wait_for_tasks in the aforementioned scenario
-	 *  insures that the task queue does not have a reference to
-	 *  the task given that the task is no longer being scheduled
-	 *  by another thread.
+	 *  task_queue::flush because the canceled task may be running
+	 *  at the time this method was called.  Calling
+	 *  task_queue::flush in the aforementioned scenario insures
+	 *  that the task queue does not have a reference to the task
+	 *  given that the task is no longer being scheduled by
+	 *  another thread.
 	 *
 	 *  @par Exception Safety:
 	 *  This method has a no-throw guarantee.
 	 */
 	bool cancel_task(itask * const task);
 
-	/// Waits for all the tasks in the task queue to be ran
-	void wait_for_tasks();
+	/// Returns after all the tasks are run
+	/**
+	 *  This method waits for all the tasks at the time it's
+	 *  scheduled.  Any tasks scheduled while this method is
+	 *  waiting will not be waited on.
+	 *
+	 *  @note If the task queue is stopped at the time this method
+	 *  is called, then it will be started to complete the flush.
+	 *  Once all the tasks are finished, the task queue will be
+	 *  stopped.
+	 */
+	void flush();
 
 	private:
 
@@ -134,6 +140,9 @@ namespace libtq
 
 	/// assumes the m_shutdown_lock mutex is locked
 	void locked_stop_queue();
+
+	/// Assumes the m_shutdown_lock mutex is locked
+	void locked_start_queue();
 
 	/// Copying is prohibited
 	task_queue(const task_queue&);

@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "task_runner.hpp"
 #include "itask_queue.hpp"
 #include "runner_canceled.hpp"
@@ -8,17 +9,19 @@ task_runner::task_runner():
     m_started(false)
 {}
 
-int task_runner::start(itask_queue* const queue)
+void task_runner::start(itask_queue* const queue)
 {
     if( m_started == true )
     {
-	return 0;
+	return;
     }
 
-    int ret = pthread_create(&m_thread, NULL, &task_runner::run_tasks, queue);
-    m_started = ret == 0 ? true : false;
+    if( pthread_create(&m_thread, NULL, &task_runner::run_tasks, queue) != 0 )
+    {
+	throw std::runtime_error("failed to start task_runner thread");
+    }
 
-    return ret;
+    m_started = true;
 }
 
 void task_runner::join()

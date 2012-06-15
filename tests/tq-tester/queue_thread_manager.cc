@@ -47,12 +47,7 @@ void* queue_thread_manager::shutdown_queue(void* d)
 
     while ( data->stop_thread->get() == false )
     {
-	if( data->queue->start_queue() )
-	{
-	    cerr << "error starting task queue\n";
-	    break;
-	}
-
+	data->queue->start_queue();
 	sleep(1);
 	data->queue->shutdown_queue();
     }

@@ -16,9 +16,8 @@ namespace libtq
 
 	/** Starts running tasks from the given queue
 	 *
-	 *  @return Zero on success, non-zero on error
 	 */
-	int start(itask_queue* const queue);
+	void start(itask_queue* const queue);
 
 	/// Joins with the task runner thread
 	void join();
