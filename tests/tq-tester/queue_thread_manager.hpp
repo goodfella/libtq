@@ -37,6 +37,7 @@ namespace tq_tester
 	libtq::thread m_cancel_tasks_thread;
 	libtq::thread m_stop_thread;
 	libtq::thread m_cancel_queue_thread;
+	libtq::thread m_flush_thread;
 
 	bool_flag m_stop_threads;
 	queue_thread_data m_data;
@@ -45,6 +46,7 @@ namespace tq_tester
 	static void* cancel_tasks(void* d);
 	static void* stop_queue(void* d);
 	static void* cancel_queue(void* d);
+	static void* flush_queue(void* d);
     };
 }
 
