@@ -11,53 +11,61 @@ namespace libtq
     {
 	public:
 
-	class cleanup
-	{
-	    friend class wait_task;
-
-	    public:
-
-	    ~cleanup();
-	    cleanup(const cleanup& rhs);
-	    cleanup& operator= (const cleanup& rhs);
-
-	    private:
-
-	    cleanup(wait_task* wt);
-
-	    wait_task* m_wait_task;
-	};
-
 	wait_task();
 	~wait_task();
 
+	/// Signals all the waiting threads
+	/**
+	 *  @note Classes that override this method should call
+	 *  wait_task::signal_waiters in their version to insure the
+	 *  waiters are signaled.
+	 */
+	virtual void signal_waiters();
+
 	/// Signals waiting threads
+	/**
+	 *  @note Child classes that override this method should call
+	 *  signal_waiters or use the signaler class.
+	 */
 	virtual void run();
 
 	/// Signals waiting threads
+	/**
+	 *  @note Child classes that override this method should call
+	 *  signal_waiters or use the signaler class.
+	 */
 	virtual void canceled();
 
 	/// Called when the task is scheduled
 	/**
-	 *  @note Classes that override this method need to call
+	 *  @note Child classes that override this method need to call
 	 *  wait_task::scheduled at some point in their version of it.
 	 */
 	virtual void scheduled();
 
 	/// Waits until either wait_task::run or wait_task::canceled is called
 	/**
+	 *  If the task is scheduled, then this method blocks until
+	 *  the task is ran or canceled.  If the task is not
+	 *  scheduled, then this method exits without blocking.
+	 *
 	 *  @note Classes that override this method need to call
 	 *  wait_task::wait in order to wait on the task.
 	 */
 	virtual void wait();
 
-	/// Returns a wait_task::cleanup
-	/**
-	 *  This method provides derived classes with an object that
-	 *  can be created on the stack, and will signal waiting
-	 *  threads when it's destroyed.
-	 */
-	const wait_task::cleanup& get_cleanup() const;
+	/// Signals a wait_task's waiters upon destruction
+	class signaler
+	{
+	    public:
+
+	    signaler(wait_task * const task): m_task(task) {}
+	    ~signaler() {m_task->signal_waiters();}
+
+	    private:
+
+	    wait_task* m_task;
+	};
 
 	private:
 

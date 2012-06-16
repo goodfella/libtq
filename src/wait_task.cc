@@ -3,31 +3,6 @@
 
 using namespace libtq;
 
-wait_task::cleanup::cleanup(wait_task * const wt):
-    m_wait_task(wt)
-{}
-
-wait_task::cleanup::~cleanup()
-{
-    m_wait_task->run();
-}
-
-wait_task::cleanup::cleanup(const wait_task::cleanup& rhs):
-    m_wait_task(rhs.m_wait_task)
-{}
-
-wait_task::cleanup& wait_task::cleanup::operator= (const wait_task::cleanup& rhs)
-{
-    if( &rhs == this )
-    {
-	return *this;
-    }
-
-    m_wait_task = rhs.m_wait_task;
-
-    return *this;
-}
-
 wait_task::wait_task()
 {
     pthread_mutex_init(&m_lock, NULL);
@@ -45,7 +20,7 @@ wait_task::~wait_task()
     pthread_mutex_destroy(&m_lock);
 }
 
-void wait_task::run()
+void wait_task::signal_waiters()
 {
     mutex_lock lock(&m_lock);
 
@@ -53,6 +28,11 @@ void wait_task::run()
     m_scheduled = false;
 
     pthread_cond_broadcast(&m_cond);
+}
+
+void wait_task::run()
+{
+    signal_waiters();
 }
 
 void wait_task::canceled()
