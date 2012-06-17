@@ -103,6 +103,7 @@ void* queue_thread_manager::flush_queue(void* d)
     while( data->stop_thread->get() == false )
     {
 	data->queue->flush();
+	pthread_yield();
     }
 
     return NULL;

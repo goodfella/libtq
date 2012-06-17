@@ -1,6 +1,7 @@
 #include "test_task.hpp"
 
 using namespace tq_tester;
+using namespace libtq;
 
 test_task::test_task():
     m_runcount(0),
@@ -40,12 +41,25 @@ const unsigned long test_task::cancelcount() const
     return counter(m_cancelcount);
 }
 
+const unsigned long test_task::waitcount() const
+{
+    return counter(m_waitcount);
+}
+
 void test_task::run()
 {
+    wait_task::signaler cleanup(this);
     inc_counter(m_runcount);
 }
 
 void test_task::canceled()
 {
+    wait_task::signaler cleanup(this);
     inc_counter(m_cancelcount);
+}
+
+void test_task::wait()
+{
+    inc_counter(m_waitcount);
+    wait_task::wait();
 }
