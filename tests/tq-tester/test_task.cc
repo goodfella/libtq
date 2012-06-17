@@ -5,7 +5,8 @@ using namespace libtq;
 
 test_task::test_task():
     m_runcount(0),
-    m_cancelcount(0)
+    m_cancelcount(0),
+    m_waitcount(0)
 {
     pthread_mutex_init(&m_lock, NULL);
 }
