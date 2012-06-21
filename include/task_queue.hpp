@@ -50,7 +50,7 @@ namespace libtq
 
 	task_queue();
 
-	/// @note The destructor makes no attempt to cancel any pending tasks.
+	/// @note The destructor makes no attempt to run or cancel any pending tasks.
 	~task_queue();
 
 	/// Starts the task queue's task runner thread
