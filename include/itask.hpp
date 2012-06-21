@@ -6,17 +6,7 @@ namespace libtq
     /// Base class for all tasks that are ran on the queue
     /**
      *  Classes that inherit from this class can be scheduled as tasks
-     *  on the task_queue and the itask::run method will be invoked
-     *  when the task_queue runs each task.  The itask::canceled
-     *  method is called by the task_queue when a task is canceled.
-     *
-     *  @note The task_queue::shutdown_queue, task_queue::stop_queue,
-     *  and task_queue::cancel_queue methods cannot be called from the
-     *  itask::run method.  The task_queue::cancel_tasks and
-     *  task_queue::cancel_task methods cannot be called from the
-     *  itask::canceled method.  Also, exceptions are not allowed to
-     *  leave itask::run or itask::canceled.
-     *
+     *  on the task_queue.
      */
     class itask
     {
@@ -24,20 +14,22 @@ namespace libtq
 
 	virtual ~itask();
 
-	/**
+	/** Called by the task_queue to perform the task's actions
+	 *
 	 *  @note The task_queue::shutdown_queue,
 	 *  task_queue::stop_queue, and task_queue::cancel_queue
-	 *  cannot be called from this method.  This method must catch
-	 *  all exceptions because no exception is allowed to leave
-	 *  this method.
+	 *  methods cannot be called from this method.  Also, no
+	 *  exception is allowed to leave this method.
 	 */
 	virtual void run() = 0;
 
-	/** 
+	/**
+	 *  @brief Called by the task_queue when the task is canceled
+	 *  and will not be ran.
+	 *
 	 *  @note The task_queue::cancel_tasks, and
-	 *  task_queue::cancel_task cannot be called from this method.
-	 *  This method must catch all exceptions because no exception
-	 *  is allowed to leave this method.
+	 *  task_queue::cancel_task methods cannot be called from this
+	 *  method.
 	 */ 
 	virtual void canceled();
 

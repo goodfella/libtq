@@ -13,7 +13,7 @@ namespace libtq
     class itask;
 
     /// Runs tasks in order of first in, first out
-    /*
+    /**
      *  @exception std::exception Unless specifically noted in a
      *  method's documentation, task_queue methods make no attempt to
      *  catch any exception thrown from the underlying STL container.
@@ -31,13 +31,26 @@ namespace libtq
      *  However, special care must be taken when a task queue's
      *  destructor is invoked.  Calling methods of a task queue that's
      *  being destroyed, or having tasks queued while a task queue is
-     *  being destroyed are both undefined.
+     *  being destroyed both will result in undefined behavior.
+     *
+     *  @par Preparing for Destruction
+     *  To insure that the task queue is in the proper state to be
+     *  destroyed via the delete operator or stack unwinding, the
+     *  task_queue::shutdown_queue and task_queue::cancel_tasks
+     *  methods should be called, or the task_queue::cancel_queue
+     *  method should be called.  Doing so will insure that the task
+     *  queue is neither running nor canceling tasks.
+     *
+     *  @par Copy Semantics:
+     *  task_queue objects cannot be copied.
      */
     class task_queue
     {
 	public:
 
 	task_queue();
+
+	/// @note The destructor makes no attempt to cancel any pending tasks.
 	~task_queue();
 
 	/// Starts the task queue's task runner thread
@@ -66,9 +79,6 @@ namespace libtq
 	/** Cancels any tasks, and stops the runner thread
 	 *
 	 *  This method calls cancel_tasks and stop_queue atomically.
-	 *
-	 *  @par Exception Safety:
-	 *  This method has a no-throw guarantee.
 	 */
 	void cancel_queue();
 
@@ -80,10 +90,11 @@ namespace libtq
 
 	/** Queues a task
 	 *
-	 *  A task can only be queued once.  So if the task was
-	 *  already queued and is not yet complete, this function will
-	 *  not queue the task a second time.
-	 *
+	 *  @note A task can only be queued once on a given queue.  So
+	 *  if the task was already queued and is not yet complete,
+	 *  this function will not queue the task a second time.
+	 *  However, a task can be queued on multiple task queues at
+	 *  the same time.
 	 */
 	void queue_task(itask * const task);
 
