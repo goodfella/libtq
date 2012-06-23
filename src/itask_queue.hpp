@@ -80,14 +80,8 @@ namespace libtq
 	/// Protects the m_tasks list and m_cancel
 	pthread_mutex_t m_lock;
 
-	/// Creates a critical section in the cancel methods
-	pthread_mutex_t m_cancel_lock;
-
 	/// Used to signal a thread waiting on an empty task list
 	pthread_cond_t m_cond;
-
-	/// Used to signal threads when a cancel method is finished
-	pthread_cond_t m_cancel_cond;
     };
 }
 

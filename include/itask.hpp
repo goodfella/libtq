@@ -27,9 +27,7 @@ namespace libtq
 	 *  @brief Called by the task_queue when the task is canceled
 	 *  and will not be ran.
 	 *
-	 *  @note The task_queue::cancel_tasks, and
-	 *  task_queue::cancel_task methods cannot be called from this
-	 *  method.
+	 *  @note No task_queue method can be called from this method.
 	 */ 
 	virtual void canceled();
 

@@ -21,10 +21,17 @@ namespace libtq
      *  container will propagate to the caller.
      *
      *  @par Exception Safety:
-     *  Unless specifically noted in a method's documentation, all methods
-     *  have a strong exception guarantee in that if an exception is thrown,
-     *  the task queue is in exactly the same state it was before the method
-     *  was called.
+     *  Unless specifically noted in a method's documentation, all
+     *  methods have a strong exception guarantee in that if an
+     *  exception is thrown, the task queue is in exactly the same
+     *  state it was before the method was called.  However, the
+     *  task_queue does not guarantee any level of exception safety of
+     *  an itask object that throws an exception in either
+     *  itask::canceled or itask::scheduled.  The specific itask
+     *  object is responsible for declaring and honoring its own
+     *  exception safety rules.  Although, if an exception is thrown
+     *  in either itask::canceled or itask::scheduled, the
+     *  task_queue's exception guarantees will be honored.
      *
      *  @par Thread Safety:
      *  It is safe to call task queue methods from multiple threads.
@@ -113,9 +120,6 @@ namespace libtq
 	 *  that the task queue does not have a reference to the task
 	 *  given that the task is no longer being scheduled by
 	 *  another thread.
-	 *
-	 *  @par Exception Safety:
-	 *  This method has a no-throw guarantee.
 	 */
 	bool cancel_task(itask * const task);
 
