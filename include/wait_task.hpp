@@ -12,62 +12,60 @@ namespace libtq
 	public:
 
 	wait_task();
-	~wait_task();
+	virtual ~wait_task();
 
 	/// Signals all the waiting threads
 	/**
-	 *  @note Classes that override this method should call
-	 *  wait_task::signal_waiters in their version to insure the
-	 *  waiters are signaled.
+	 *  @note Sub classes are not allowed to override this method.
 	 */
-	virtual void signal_waiters();
+	void signal_waiters();
 
 	/// Signals waiting threads
 	/**
-	 *  @note Child classes that override this method should call
-	 *  signal_waiters or use the signaler class.
+	 *  @note Sub classes are not allowed to override this method.
+	 *  Instead, override wait_task::wait_task_run.
 	 */
-	virtual void run();
+	void run();
 
 	/// Signals waiting threads
 	/**
-	 *  @note Child classes that override this method should call
-	 *  signal_waiters or use the signaler class.
+	 *  @note Sub classes are not allowed to override this method.
+	 *  Instead, override wait_task::wait_task_canceled.
 	 */
-	virtual void canceled();
+	void canceled();
 
 	/// Called when the task is scheduled
 	/**
-	 *  @note Child classes that override this method need to call
-	 *  wait_task::scheduled at some point in their version of it.
+	 *  @note Sub classes are not allowed to override this method.
+	 *  Instead, override wait_task::wait_task_scheduled.
 	 */
-	virtual void scheduled();
+	void scheduled();
 
-	/// Waits until either wait_task::run or wait_task::canceled is called
+	/// Blocks the calling thread until wait_task::run or wait_task::canceled is called
 	/**
 	 *  If the task is scheduled, then this method blocks until
 	 *  the task is ran or canceled.  If the task is not
 	 *  scheduled, then this method exits without blocking.
 	 *
-	 *  @note Classes that override this method need to call
-	 *  wait_task::wait in order to wait on the task.
+	 *  @note Sub classes are not allowed to override this method.
+	 *  Instead override wait_task::wait_task_wait.
 	 */
-	virtual void wait();
+	void wait();
 
-	/// Signals a wait_task's waiters upon destruction
-	class signaler
-	{
-	    public:
-
-	    signaler(wait_task * const task): m_task(task) {}
-	    ~signaler() {m_task->signal_waiters();}
-
-	    private:
-
-	    wait_task* m_task;
-	};
 
 	private:
+
+	/// Called by wait_task::run
+	virtual void wait_task_run();
+
+	/// Called by wait_task::canceled
+	virtual void wait_task_canceled();
+
+	/// Called by wait_task::scheduled
+	virtual void wait_task_scheduled();
+
+	/// Called by wait_task::wait
+	virtual void wait_task_wait();
 
 	// This class is not copyable
 	wait_task(const wait_task& rhs);

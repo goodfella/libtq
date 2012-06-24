@@ -47,20 +47,17 @@ const unsigned long test_task::waitcount() const
     return counter(m_waitcount);
 }
 
-void test_task::run()
+void test_task::wait_task_run()
 {
-    wait_task::signaler cleanup(this);
     inc_counter(m_runcount);
 }
 
-void test_task::canceled()
+void test_task::wait_task_canceled()
 {
-    wait_task::signaler cleanup(this);
     inc_counter(m_cancelcount);
 }
 
-void test_task::wait()
+void test_task::wait_task_wait()
 {
     inc_counter(m_waitcount);
-    wait_task::wait();
 }

@@ -32,17 +32,22 @@ void wait_task::signal_waiters()
 
 void wait_task::run()
 {
+    wait_task_run();
     signal_waiters();
 }
 
 void wait_task::canceled()
 {
+    wait_task_canceled();
+
     // signal the waiting threads
-    run();
+    signal_waiters();
 }
 
 void wait_task::scheduled()
 {
+    wait_task_scheduled();
+
     mutex_lock lock(&m_lock);
     m_scheduled = true;
 }
@@ -50,6 +55,8 @@ void wait_task::scheduled()
 void wait_task::wait()
 {
     int counter;
+
+    wait_task_wait();
 
     mutex_lock lock(&m_lock);
 
@@ -67,3 +74,15 @@ void wait_task::wait()
 	pthread_cond_wait(&m_cond, &m_lock);
     }
 }
+
+void wait_task::wait_task_run()
+{}
+
+void wait_task::wait_task_canceled()
+{}
+
+void wait_task::wait_task_scheduled()
+{}
+
+void wait_task::wait_task_wait()
+{}

@@ -13,15 +13,15 @@ namespace tq_tester
 	test_task();
 	~test_task();
 	
-	void run();
-	void canceled();
-	void wait();
-
 	const unsigned long runcount() const;
 	const unsigned long cancelcount() const;
 	const unsigned long waitcount() const;
 
 	private:
+
+	void wait_task_run();
+	void wait_task_canceled();
+	void wait_task_wait();
 	
 	void inc_counter(unsigned long& counter);
 	const unsigned long counter(const unsigned long& counter) const;
