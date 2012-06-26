@@ -7,6 +7,29 @@
 namespace libtq
 {
     /// A class that implements wait capabilities
+    /**
+     *  The intention of this class is to be used as a base class for
+     *  itasks that need to be waited on until they're ran.  Only the
+     *  virtual methods of this class should be overriden.  The phrase
+     *  "wait task object" will be used hereafter to refer to a
+     *  wait_task object, or an object of a class which inherits from
+     *  the wait_task class.
+     *
+     *  @par Copy Semantics:
+     *  This class cannot be copied.
+     *
+     *  @par Thread Safety:
+     *  All methods of this class are safe to call from multiple
+     *  threads.  However, it is not thread safe to call a method on a
+     *  wait task object in one thread while the same wait task object
+     *  is being destroyed via its destructor in another thread.
+     *
+     *  @par Scheduling:
+     *  A wait task object can be scheduled on multiple task queues.
+     *  However, every thread blocked in the wait_task::wait method
+     *  will be signaled from the first task_queue where the wait task
+     *  object is ran.
+     */
     class wait_task : public itask
     {
 	public:
@@ -91,9 +114,17 @@ namespace libtq
 	virtual void wait_task_run();
 
 	/// Called by wait_task::canceled
+	/**
+	 *  @see itask::canceled for restrictions when overriding this
+	 *  method.
+	 */
 	virtual void wait_task_canceled();
 
 	/// Called by wait_task::scheduled
+	/**
+	 *  @see itask::scheduled for restrictions when overriding this
+	 *  method.
+	 */
 	virtual void wait_task_scheduled();
 
 	/// Called by wait_task::wait
@@ -103,9 +134,13 @@ namespace libtq
 	wait_task(const wait_task& rhs);
 	wait_task& operator =(const wait_task& rhs);
 
-	// Used by the waiters to know when the task has been ran
-	int m_counter;
-	bool m_scheduled;
+	typedef unsigned int counter_t;
+
+	/// Used by wait_task::wait to know when the task has been ran
+	counter_t m_counter;
+
+	/// Used by wait_task::wait to know if the task is scheduled
+	counter_t m_scheduled;
 
 	pthread_mutex_t m_lock;
 	pthread_cond_t m_cond;
