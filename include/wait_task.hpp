@@ -17,6 +17,9 @@ namespace libtq
 	/// Signals all the waiting threads
 	/**
 	 *  @note Sub classes are not allowed to override this method.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a no throw exception guarantee
 	 */
 	void signal_waiters();
 
@@ -24,6 +27,7 @@ namespace libtq
 	/**
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead, override wait_task::wait_task_run.
+	 *
 	 */
 	void run();
 
@@ -31,6 +35,11 @@ namespace libtq
 	/**
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead, override wait_task::wait_task_canceled.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a weak exception guarantee because waiting
+	 *  threads are signaled even if wait_task::wait_task_canceled
+	 *  throws an exception.
 	 */
 	void canceled();
 
@@ -38,6 +47,9 @@ namespace libtq
 	/**
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead, override wait_task::wait_task_scheduled.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a strong exception guarantee.
 	 */
 	void scheduled();
 
@@ -49,13 +61,33 @@ namespace libtq
 	 *
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead override wait_task::wait_task_wait.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a strong exception guarantee.
 	 */
 	void wait();
 
 
 	private:
 
+	/// Signals a wait_task's waiters upon destruction
+	class signaler
+	{
+	    public:
+
+	    signaler(wait_task * const task): m_task(task) {}
+	    ~signaler() {m_task->signal_waiters();}
+
+	    private:
+
+	    wait_task* m_task;
+	};
+
 	/// Called by wait_task::run
+	/**
+	 *  @see itask::run for restrictions when overriding this
+	 *  method.
+	 */
 	virtual void wait_task_run();
 
 	/// Called by wait_task::canceled

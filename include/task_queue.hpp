@@ -86,12 +86,24 @@ namespace libtq
 	/** Cancels any tasks, and stops the runner thread
 	 *
 	 *  This method calls cancel_tasks and stop_queue atomically.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a weak exception guarantee because an
+	 *  itask::canceled method may throw an exception.  See
+	 *  task_queue::cancel_task for information about exceptions
+	 *  leaving the itask::canceled method.
 	 */
 	void cancel_queue();
 
 	/** Cancels all the queued tasks
 	 *
 	 *  @note This function does not stop the task runner thread.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a weak exception guarantee because
+	 *  itask::canceled may throw an exception.  See
+	 *  task_queue::cancel_task for information about exceptions
+	 *  leaving the itask::canceled method.
 	 */
 	void cancel_tasks();
 
@@ -120,6 +132,16 @@ namespace libtq
 	 *  that the task queue does not have a reference to the task
 	 *  given that the task is no longer being scheduled by
 	 *  another thread.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a weak exception guarantee because
+	 *  itask::canceled may throw an exception.  The itask is
+	 *  removed from the task queue even if itask::canceled throws
+	 *  an exception.  Tasks are always removed from the queue
+	 *  because the task queue has no way of knowing what
+	 *  exception guarantees the itask honors, and therefore, does
+	 *  not know if it's safe to run the task if itask::canceled
+	 *  throws an exception.
 	 */
 	bool cancel_task(itask * const task);
 

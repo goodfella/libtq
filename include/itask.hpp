@@ -16,10 +16,11 @@ namespace libtq
 
 	/** Called by the task_queue to perform the task's actions
 	 *
-	 *  @note The task_queue::shutdown_queue,
-	 *  task_queue::stop_queue, and task_queue::cancel_queue
-	 *  methods cannot be called from this method.  Also, no
-	 *  exception is allowed to leave this method.
+	 *  @par Restrictions
+	 *  The task_queue::shutdown_queue, task_queue::stop_queue,
+	 *  and task_queue::cancel_queue methods cannot be called from
+	 *  this method.  Also, no exception is allowed to leave this
+	 *  method.
 	 */
 	virtual void run() = 0;
 

@@ -38,10 +38,10 @@ void wait_task::run()
 
 void wait_task::canceled()
 {
+    // signal waiters after calling wait_task_canceled and even if
+    // wait_task_canceled throws an exception
+    wait_task::signaler cleanup(this);
     wait_task_canceled();
-
-    // signal the waiting threads
-    signal_waiters();
 }
 
 void wait_task::scheduled()

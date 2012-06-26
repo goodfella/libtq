@@ -76,9 +76,8 @@ bool itask_queue::cancel_task(itask * const itaskp)
 
 	if( th != m_tasks.end() )
 	{
-	    // Cancel first to have a strong exception guarantee.
-	    (*th)->canceled();
 	    m_tasks.erase(th);
+	    (*th)->canceled();
 	    return true;
 	}
     }
@@ -90,16 +89,14 @@ void itask_queue::cancel_tasks()
 {
     mutex_lock lock(&m_lock);
 
-    if( m_tasks.empty() == true )
+    while( m_tasks.empty() == false )
     {
-	// Exit early if there are no tasks scheduled
-	return;
+	/* pop the task before canceling that way if itask::canceled
+	 * throws an exception the task is removed from the queue */
+	itask* task = m_tasks.back();
+	m_tasks.pop_back();
+	task->canceled();
     }
-
-    // Cancel each task before clearing the queue to insure the strong
-    // exception guarantee.
-    for_each(m_tasks.begin(), m_tasks.end(), mem_fun(&itask::canceled));
-    m_tasks.clear();
 }
 
 void itask_queue::set_cancel()
