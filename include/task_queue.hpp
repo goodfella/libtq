@@ -14,11 +14,12 @@ namespace libtq
 
     /// Runs tasks in order of first in, first out
     /**
-     *  @exception std::exception Unless specifically noted in a
-     *  method's documentation, task_queue methods make no attempt to
-     *  catch any exception thrown from the underlying STL container.
-     *  So a std exception generated from an operation on said
-     *  container will propagate to the caller.
+     *  @par Exceptions:
+     *  The task queue methods can throw exceptions associated with
+     *  modifying STL containers.  Exceptions can also be thrown from
+     *  itask::scheduled, and itask::canceled which are called in
+     *  task_queue::queue_task, task_queue::cancel_task,
+     *  task_queue::cancel_tasks, and task_queue::cancel_queue.
      *
      *  @par Exception Safety:
      *  Unless specifically noted in a method's documentation, all
@@ -40,7 +41,7 @@ namespace libtq
      *  being destroyed, or having tasks queued while a task queue is
      *  being destroyed both will result in undefined behavior.
      *
-     *  @par Preparing for Destruction
+     *  @par Preparing for Destruction:
      *  To insure that the task queue is in the proper state to be
      *  destroyed via the delete operator or stack unwinding, the
      *  task_queue::shutdown_queue and task_queue::cancel_tasks

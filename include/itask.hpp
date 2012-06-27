@@ -16,7 +16,7 @@ namespace libtq
 
 	/** Called by the task_queue to perform the task's actions
 	 *
-	 *  @par Restrictions
+	 *  @par Restrictions:
 	 *  The task_queue::shutdown_queue, task_queue::stop_queue,
 	 *  and task_queue::cancel_queue methods cannot be called from
 	 *  this method.  Also, no exception is allowed to leave this
@@ -28,7 +28,8 @@ namespace libtq
 	 *  @brief Called by the task_queue when the task is canceled
 	 *  and will not be ran.
 	 *
-	 *  @note No task_queue method can be called from this method.
+	 *  @par Restrictions:
+	 *  No task_queue method can be called from this method.
 	 */ 
 	virtual void canceled();
 
@@ -36,8 +37,10 @@ namespace libtq
 	/**
 	 *  @note This method is only called once per run.  So if the
 	 *  task has been scheduled, but not yet ran, and the task is
-	 *  scheduled again, this method is not called again.  No
-	 *  task_queue methods can be called from this method.
+	 *  scheduled again, this method is not called again.
+	 *
+	 *  @par Restrictions:
+	 *  No task_queue methods can be called from this method.
 	 */
 	virtual void scheduled();
     };
