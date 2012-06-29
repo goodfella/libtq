@@ -27,14 +27,21 @@ void wait_task::signal_waiters()
 {
     mutex_lock lock(&m_lock);
 
-    ++m_counter;
-
     if( m_scheduled > 0 )
     {
-	--m_scheduled;
-    }
+	// Only increment m_counter if there are potentially threads
+	// waiting for it to change.
+	++m_counter;
 
-    pthread_cond_broadcast(&m_cond);
+	// Only decrement m_scheduled if the task is scheduled that
+	// way m_scheduled does not wrap from 0 - 1.
+	--m_scheduled;
+
+	// No need to broadcast the condition if there are no blocked
+	// threads.  When m_scheduled == 0, wait_task::wait does not
+	// block.
+	pthread_cond_broadcast(&m_cond);
+    }
 }
 
 void wait_task::run()
