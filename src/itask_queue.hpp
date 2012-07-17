@@ -31,23 +31,6 @@ namespace libtq
 	 */
 	void queue_task(itask * const task);
 
-	/** Cancels the execution of a task
-	 *
-	 *  Cancels a previously queued task, and calls the canceled
-	 *  method of the itask object.
-	 *
-	 *  @return true if the task was canceled, false if the task
-	 *  was not scheduled at the time this method was called.
-	 */
-	bool cancel_task(itask * const task);
-
-	/** Cancels all the tasks that are queued
-	 *
-	 *  @note This method notifies the waiters of each queued
-	 *  task, that the task was canceled.
-	 */
-	void cancel_tasks();
-
 	/** Runs the task at the front of the queue
 	 *
 	 *  Blocks if the queue is empty

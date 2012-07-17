@@ -2,5 +2,3 @@
 using namespace libtq;
 
 itask::~itask() {}
-void itask::canceled() {}
-void itask::scheduled() {}

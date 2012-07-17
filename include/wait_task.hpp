@@ -6,14 +6,15 @@
 
 namespace libtq
 {
+    class task_queue;
+
     /// A class that implements wait capabilities
     /**
      *  The intention of this class is to be used as a base class for
      *  itasks that need to be waited on until they're ran.  Only the
      *  virtual methods of this class should be overriden.  The phrase
      *  "wait task object" will be used hereafter to refer to a
-     *  wait_task object, or an object of a class which inherits from
-     *  the wait_task class.
+     *  wait_task object, or a wait_task sub-class.
      *
      *  @par Copy Semantics:
      *  This class cannot be copied.
@@ -30,8 +31,11 @@ namespace libtq
      *  will be signaled from the first task_queue where the wait task
      *  object is ran.
      */
-    class wait_task : public itask
+    class wait_task : private itask
     {
+	/* Private inheritance of itask enforces that scheduling is
+	 * done only through wait_task::schedule. */
+
 	public:
 
 	wait_task();
@@ -54,42 +58,24 @@ namespace libtq
 	 */
 	void run();
 
-	/// Signals waiting threads
-	/**
-	 *  @note Sub classes are not allowed to override this method.
-	 *  Instead, override wait_task::wait_task_canceled.
-	 *
-	 *  @par Exception Safety
-	 *  This method has a weak exception guarantee because waiting
-	 *  threads are signaled even if wait_task::wait_task_canceled
-	 *  throws an exception.
-	 */
-	void canceled();
-
-	/// Called when the task is scheduled
-	/**
-	 *  @note Sub classes are not allowed to override this method.
-	 *  Instead, override wait_task::wait_task_scheduled.
-	 *
-	 *  @par Exception Safety
-	 *  This method has a strong exception guarantee.
-	 */
-	void scheduled();
-
-	/// Blocks the calling thread until wait_task::run or wait_task::canceled is called
+	/// Blocks the calling thread until wait_task::run is invoked
 	/**
 	 *  If the task is scheduled, then this method blocks until
-	 *  the task is ran or canceled.  If the task is not
-	 *  scheduled, then this method exits without blocking.
+	 *  the task is ran.  If the task is not scheduled, then this
+	 *  method exits without blocking.
 	 *
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead override wait_task::wait_task_wait.
 	 *
+	 *  @return true if the task was waited on, false otherwise.
+	 *
 	 *  @par Exception Safety
 	 *  This method has a strong exception guarantee.
 	 */
-	void wait();
+	bool wait();
 
+	/// Schedules a wait_task on a task queue
+	void schedule(task_queue * const queue);
 
 	private:
 
@@ -113,22 +99,11 @@ namespace libtq
 	 */
 	virtual void wait_task_run();
 
-	/// Called by wait_task::canceled
-	/**
-	 *  @see itask::canceled for restrictions when overriding this
-	 *  method.
-	 */
-	virtual void wait_task_canceled();
-
-	/// Called by wait_task::scheduled
-	/**
-	 *  @see itask::scheduled for restrictions when overriding this
-	 *  method.
-	 */
-	virtual void wait_task_scheduled();
-
 	/// Called by wait_task::wait
 	virtual void wait_task_wait();
+
+	/// Called by wait_task::schedule
+	virtual void wait_task_scheduled();
 
 	// This class is not copyable
 	wait_task(const wait_task& rhs);

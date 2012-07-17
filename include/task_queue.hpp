@@ -16,23 +16,13 @@ namespace libtq
     /**
      *  @par Exceptions:
      *  The task queue methods can throw exceptions associated with
-     *  modifying STL containers.  Exceptions can also be thrown from
-     *  itask::scheduled, and itask::canceled which are called in
-     *  task_queue::queue_task, task_queue::cancel_task,
-     *  task_queue::cancel_tasks, and task_queue::cancel_queue.
+     *  modifying STL containers.
      *
      *  @par Exception Safety:
      *  Unless specifically noted in a method's documentation, all
      *  methods have a strong exception guarantee in that if an
      *  exception is thrown, the task queue is in exactly the same
-     *  state it was before the method was called.  However, the
-     *  task_queue does not guarantee any level of exception safety of
-     *  an itask object that throws an exception in either
-     *  itask::canceled or itask::scheduled.  The specific itask
-     *  object is responsible for declaring and honoring its own
-     *  exception safety rules.  Although, if an exception is thrown
-     *  in either itask::canceled or itask::scheduled, the
-     *  task_queue's exception guarantees will be honored.
+     *  state it was before the method was called.
      *
      *  @par Thread Safety:
      *  It is safe to call task queue methods from multiple threads.
@@ -42,12 +32,10 @@ namespace libtq
      *  being destroyed both will result in undefined behavior.
      *
      *  @par Preparing for Destruction:
-     *  To insure that the task queue is in the proper state to be
-     *  destroyed via the delete operator or stack unwinding, the
-     *  task_queue::shutdown_queue and task_queue::cancel_tasks
-     *  methods should be called, or the task_queue::cancel_queue
+     *  To insure that the task queue is in the proper state for
+     *  invocation of the destructor, the task_queue::shutdown_queue
      *  method should be called.  Doing so will insure that the task
-     *  queue is neither running nor canceling tasks.
+     *  queue is not running.
      *
      *  @par Copy Semantics:
      *  task_queue objects cannot be copied.
@@ -84,30 +72,6 @@ namespace libtq
 	 */
 	void stop_queue();
 
-	/** Cancels any tasks, and stops the runner thread
-	 *
-	 *  This method calls cancel_tasks and stop_queue atomically.
-	 *
-	 *  @par Exception Safety
-	 *  This method has a weak exception guarantee because an
-	 *  itask::canceled method may throw an exception.  See
-	 *  task_queue::cancel_task for information about exceptions
-	 *  leaving the itask::canceled method.
-	 */
-	void cancel_queue();
-
-	/** Cancels all the queued tasks
-	 *
-	 *  @note This function does not stop the task runner thread.
-	 *
-	 *  @par Exception Safety
-	 *  This method has a weak exception guarantee because
-	 *  itask::canceled may throw an exception.  See
-	 *  task_queue::cancel_task for information about exceptions
-	 *  leaving the itask::canceled method.
-	 */
-	void cancel_tasks();
-
 	/** Queues a task
 	 *
 	 *  @note A task can only be queued once on a given queue.  So
@@ -117,34 +81,6 @@ namespace libtq
 	 *  the same time.
 	 */
 	void queue_task(itask * const task);
-
-	/** Cancels the execution of a task
-	 *
-	 *  Cancels a previously queued task, and calls the itask's
-	 *  canceled method.
-	 *
-	 *  @return True if the task was canceled, false if the task
-	 *  was not scheduled at the time this method was called or if
-	 *  the task was being ran at the time this method was called.
-	 *  If this method returns false, it may be necessary to call
-	 *  task_queue::flush because the canceled task may be running
-	 *  at the time this method was called.  Calling
-	 *  task_queue::flush in the aforementioned scenario insures
-	 *  that the task queue does not have a reference to the task
-	 *  given that the task is no longer being scheduled by
-	 *  another thread.
-	 *
-	 *  @par Exception Safety
-	 *  This method has a weak exception guarantee because
-	 *  itask::canceled may throw an exception.  The itask is
-	 *  removed from the task queue even if itask::canceled throws
-	 *  an exception.  Tasks are always removed from the queue
-	 *  because the task queue has no way of knowing what
-	 *  exception guarantees the itask honors, and therefore, does
-	 *  not know if it's safe to run the task if itask::canceled
-	 *  throws an exception.
-	 */
-	bool cancel_task(itask * const task);
 
 	/// Returns after all the tasks are run
 	/**
@@ -190,11 +126,6 @@ namespace libtq
     inline void task_queue::queue_task(itask * const taskp)
     {
 	m_queue.queue_task(taskp);
-    }
-
-    inline bool task_queue::cancel_task(itask * const taskp)
-    {
-	return m_queue.cancel_task(taskp);
     }
 }
 

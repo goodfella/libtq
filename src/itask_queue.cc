@@ -38,9 +38,6 @@ void itask_queue::queue_task(itask * const itaskp)
 
 	if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
 	{
-	    // Notify the task that it's been scheduled
-	    itaskp->scheduled();
-
 	    // Schedule the task after calling itask::scheduled() to
 	    // maintain the strong exception guarantee
 	    m_tasks.push_back(itaskp);
@@ -57,45 +54,6 @@ void itask_queue::queue_task(itask * const itaskp)
     {
 	/* Signal a waiting thread if the queue was previously empty */
 	pthread_cond_signal(&m_cond);
-    }
-}
-
-bool itask_queue::cancel_task(itask * const itaskp)
-{
-    mutex_lock lock(&m_lock);
-
-    if( m_tasks.empty() == true )
-    {
-	// The task queue is empty, so there's no task to cancel
-	return false;
-    }
-    else
-    {
-	// Search for the task to cancel
-	list<itask*>::iterator th = find(m_tasks.begin(), m_tasks.end(), itaskp);
-
-	if( th != m_tasks.end() )
-	{
-	    m_tasks.erase(th);
-	    (*th)->canceled();
-	    return true;
-	}
-    }
-
-    return false;
-}
-
-void itask_queue::cancel_tasks()
-{
-    mutex_lock lock(&m_lock);
-
-    while( m_tasks.empty() == false )
-    {
-	/* pop the task before canceling that way if itask::canceled
-	 * throws an exception the task is removed from the queue */
-	itask* task = m_tasks.back();
-	m_tasks.pop_back();
-	task->canceled();
     }
 }
 

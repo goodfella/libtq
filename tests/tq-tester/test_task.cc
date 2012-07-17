@@ -5,7 +5,6 @@ using namespace libtq;
 
 test_task::test_task():
     m_runcount(0),
-    m_cancelcount(0),
     m_waitcount(0)
 {
     pthread_mutex_init(&m_lock, NULL);
@@ -37,11 +36,6 @@ const unsigned long test_task::runcount() const
     return counter(m_runcount);
 }
 
-const unsigned long test_task::cancelcount() const
-{
-    return counter(m_cancelcount);
-}
-
 const unsigned long test_task::waitcount() const
 {
     return counter(m_waitcount);
@@ -50,11 +44,6 @@ const unsigned long test_task::waitcount() const
 void test_task::wait_task_run()
 {
     inc_counter(m_runcount);
-}
-
-void test_task::wait_task_canceled()
-{
-    inc_counter(m_cancelcount);
 }
 
 void test_task::wait_task_wait()

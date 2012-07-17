@@ -14,13 +14,11 @@ namespace tq_tester
 	~test_task();
 	
 	const unsigned long runcount() const;
-	const unsigned long cancelcount() const;
 	const unsigned long waitcount() const;
 
 	private:
 
 	void wait_task_run();
-	void wait_task_canceled();
 	void wait_task_wait();
 	
 	void inc_counter(unsigned long& counter);
@@ -28,7 +26,6 @@ namespace tq_tester
 	
 	mutable pthread_mutex_t m_lock;
 	unsigned long m_runcount;
-	unsigned long m_cancelcount;
 	unsigned long m_waitcount;
     };
 }
