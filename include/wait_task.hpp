@@ -31,11 +31,8 @@ namespace libtq
      *  will be signaled from the first task_queue where the wait task
      *  object is ran.
      */
-    class wait_task : private itask
+    class wait_task : public itask
     {
-	/* Private inheritance of itask enforces that scheduling is
-	 * done only through wait_task::schedule. */
-
 	public:
 
 	wait_task();
@@ -74,9 +71,6 @@ namespace libtq
 	 */
 	bool wait();
 
-	/// Schedules a wait_task on a task queue
-	void schedule(task_queue * const queue);
-
 	private:
 
 	/// Signals a wait_task's waiters upon destruction
@@ -91,6 +85,16 @@ namespace libtq
 
 	    wait_task* m_task;
 	};
+
+	/// Notifies a wait_task object that it has been scheduled
+	/**
+	 *  @note Sub classes are not allowed to override this method.
+	 *  Instead, override wait_task::wait_task_scheduled.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a strong exception guarantee.
+	 */
+	void scheduled();
 
 	/// Called by wait_task::run
 	/**

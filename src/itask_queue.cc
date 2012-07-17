@@ -38,6 +38,8 @@ void itask_queue::queue_task(itask * const itaskp)
 
 	if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
 	{
+	    itaskp->scheduled();
+
 	    // Schedule the task after calling itask::scheduled() to
 	    // maintain the strong exception guarantee
 	    m_tasks.push_back(itaskp);

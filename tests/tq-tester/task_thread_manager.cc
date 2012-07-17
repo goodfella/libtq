@@ -65,7 +65,7 @@ void* task_thread_manager::task_sch_handler(void* t)
 
     while( desc->stop_thread->get() == false )
     {
-	desc->taskp->schedule(desc->queue);
+	desc->queue->queue_task(desc->taskp);
 	pthread_yield();
     };
 
@@ -83,7 +83,7 @@ void* task_thread_manager::task_scheduler(void* d)
     {
 	for( int i = 0; i < task_count; ++i )
 	{
-	    tasks[i].schedule(data->queue);
+	    data->queue->queue_task(&tasks[i]);
 	}
 
 	for( int i = 0; i < task_count; ++i )

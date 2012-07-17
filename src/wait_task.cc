@@ -45,14 +45,12 @@ void wait_task::signal_waiters()
     }
 }
 
-void wait_task::schedule(task_queue * const queue)
+void wait_task::scheduled()
 {
     // Let sub-classes know they've been scheduled
     wait_task_scheduled();
 
     mutex_lock lock(&m_lock);
-
-    queue->queue_task(this);
     ++m_scheduled;
 }
 

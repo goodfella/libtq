@@ -3,6 +3,8 @@
 
 namespace libtq
 {
+    class itask_queue;
+
     /// Base class for all tasks that are ran on the queue
     /**
      *  Classes that inherit from this class can be scheduled as tasks
@@ -10,6 +12,8 @@ namespace libtq
      */
     class itask
     {
+	friend class itask_queue;
+
 	public:
 
 	virtual ~itask();
@@ -23,6 +27,20 @@ namespace libtq
 	 *  method.
 	 */
 	virtual void run() = 0;
+
+	private:
+
+	/// Called when the task is scheduled on a task_queue
+	/**
+	 *  @note This method is invoked every time an itask is
+	 *  scheduled on a given task_queue.  However, if the itask is
+	 *  pending on a given task_queue, and scheduled again on the
+	 *  that task_queue, then this method is not invoked.
+	 *
+	 *  @par Restrictions:
+	 *  No task_queue methods can be called from this method.
+	 */
+	virtual void scheduled();
     };
 }
 

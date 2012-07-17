@@ -81,7 +81,7 @@ void task_queue::flush()
 
     try
     {
-	m_wait_task.schedule(this);
+	m_queue.queue_task(&m_wait_task);
     }
     catch(...)
     {
