@@ -107,6 +107,10 @@ namespace libtq
 	virtual void wait_task_wait();
 
 	/// Called by wait_task::schedule
+	/**
+	 *  @see itask::scheduled for restrictions when overriding
+	 *  this method.
+	 */
 	virtual void wait_task_scheduled();
 
 	// This class is not copyable

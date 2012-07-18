@@ -109,7 +109,7 @@ namespace libtq
 	/// task runner object
 	task_runner m_task_runner;
 
-	/// wait_task object used for wait_for_tasks
+	/// wait_task object used for task_queue::flush
 	wait_task m_wait_task;
 
 	/// assumes the m_shutdown_lock mutex is locked
