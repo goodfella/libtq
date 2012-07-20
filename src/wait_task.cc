@@ -56,11 +56,8 @@ void wait_task::scheduled()
 
 void wait_task::run()
 {
-    /* Handling exceptions here is unecessary because exceptions are
-     * not allowed to leave itask::run */
-
+    signaler signal(this);
     wait_task_run();
-    signal_waiters();
 }
 
 bool wait_task::wait()

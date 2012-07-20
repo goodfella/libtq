@@ -57,7 +57,7 @@ void task_queue::shutdown_queue()
 
     // queue and wait for the shutdown task to finish
     queue_task(&kill_task_runner);
-    kill_task_runner.wait_for_completion();
+    kill_task_runner.wait();
 
     m_task_runner.join();
 
