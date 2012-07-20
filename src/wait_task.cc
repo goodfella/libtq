@@ -60,7 +60,7 @@ void wait_task::run()
     wait_task_run();
 }
 
-bool wait_task::wait()
+void wait_task::wait()
 {
     counter_t counter;
 
@@ -71,7 +71,7 @@ bool wait_task::wait()
     if( m_scheduled == 0 )
     {
 	// don't wait if the task is not scheduled
-	return false;
+	return;
     }
 
     counter = m_counter;
@@ -81,8 +81,6 @@ bool wait_task::wait()
     {
 	pthread_cond_wait(&m_cond, &m_lock);
     }
-
-    return true;
 }
 
 void wait_task::wait_task_run()

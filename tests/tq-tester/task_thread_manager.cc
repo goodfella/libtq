@@ -43,8 +43,6 @@ void task_thread_manager::stop_threads()
     // Make sure the task is not scheduled
     m_desc.queue->flush();
 
-    m_task.signal_waiters();
-
     m_wait_thread.join();
 }
 

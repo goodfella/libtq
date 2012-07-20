@@ -30,6 +30,16 @@ namespace libtq
      *  However, every thread blocked in the wait_task::wait method
      *  will be signaled from the first task_queue where the wait task
      *  object is ran.
+     *
+     *  @par Waiting:
+     *  In order for wait_task::wait to work properly the wait_task
+     *  object must of been scheduled prior to calling
+     *  wait_task::wait.  There is no way for the caller of
+     *  wait_task::wait to know if wait_task::wait returned because
+     *  the wait_task object was never scheduled or because
+     *  wait_task::wait was called just after the wait_task object was
+     *  ran.  So the safest way to call wait_task::wait is immediately
+     *  after scheduling the wait_task object on a task queue.
      */
     class wait_task : public itask
     {
@@ -37,15 +47,6 @@ namespace libtq
 
 	wait_task();
 	virtual ~wait_task();
-
-	/// Signals all the waiting threads
-	/**
-	 *  @note Sub classes are not allowed to override this method.
-	 *
-	 *  @par Exception Safety
-	 *  This method has a no throw exception guarantee
-	 */
-	void signal_waiters();
 
 	/// Signals waiting threads
 	/**
@@ -69,16 +70,11 @@ namespace libtq
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead override wait_task::wait_task_wait.
 	 *
-	 *  @return true if the task was waited on, false otherwise.
-	 *  Note that a return of false does not imply that the
-	 *  wait_task object was not ran.  A wait_task object could of
-	 *  been ran between the time it was scheduled on a task_queue
-	 *  and wait_task::wait was called.
-	 *
 	 *  @par Exception Safety
 	 *  This method has a no throw guarantee.
 	 */
-	bool wait();
+	void wait();
+
 
 	private:
 
@@ -94,6 +90,15 @@ namespace libtq
 
 	    wait_task* m_task;
 	};
+
+	/// Signals all the waiting threads
+	/**
+	 *  @note Sub classes are not allowed to override this method.
+	 *
+	 *  @par Exception Safety
+	 *  This method has a no throw exception guarantee
+	 */
+	void signal_waiters();
 
 	/// Notifies a wait_task object that it has been scheduled
 	/**
