@@ -5,6 +5,7 @@
 
 namespace libtq
 {
+    /// Exception thrown when a task runner thread needs to exit
     struct runner_canceled: public std::exception
     {
 	const char* what() const throw();

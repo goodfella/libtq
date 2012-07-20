@@ -52,16 +52,16 @@ namespace libtq
 	/// Starts the task queue's task runner thread
 	void start_queue();
 
-	/** Shutdowns the task queue's task runner thread
-	 *
+	/// Shutdowns the task queue's task runner thread
+	/*
 	 *  This method blocks the calling thread until all the tasks
 	 *  queued at the time it's called are finished, and the task
 	 *  runner thread is stopped.
 	 */
 	void shutdown_queue();
 
-	/** Stops the task runner thread
-	 *
+	/// Stops the task runner thread
+	/*
 	 *  This method stops the task runner thread immediately.
 	 *
 	 *  @note After this method is finished there may still be
@@ -72,8 +72,8 @@ namespace libtq
 	 */
 	void stop_queue();
 
-	/** Queues a task
-	 *
+	/// Queues a task
+	/*
 	 *  @note A task can only be queued once on a given queue.  So
 	 *  if the task was already queued and is not yet complete,
 	 *  this function will not queue the task a second time.

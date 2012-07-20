@@ -5,6 +5,7 @@
 
 namespace libtq
 {
+    /// Provides RAII locking for a pthread mutex
     class mutex_lock
     {
 	public:

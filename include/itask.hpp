@@ -18,13 +18,13 @@ namespace libtq
 
 	virtual ~itask();
 
-	/** Called by the task_queue to perform the task's actions
-	 *
+	/// Called by the task_queue to perform the task's action
+	/*
 	 *  @par Restrictions:
 	 *  The task_queue::shutdown_queue, task_queue::stop_queue,
-	 *  and task_queue::cancel_queue methods cannot be called from
-	 *  this method.  Also, no exception is allowed to leave this
-	 *  method.
+	 *  task_queue::start_queue, and task_queue::flush methods
+	 *  cannot be called from this method.  Also, no exception is
+	 *  allowed to leave this method.
 	 */
 	virtual void run() = 0;
 

@@ -52,6 +52,11 @@ namespace libtq
 	 *  @note Sub classes are not allowed to override this method.
 	 *  Instead, override wait_task::wait_task_run.
 	 *
+	 *  @par Exception Safety
+	 *
+	 *  Since exceptions are not allowed to leave itask::run, this
+	 *  method should have a no throw guarantee; however, a
+	 *  non-compliant itask may not honor the guarantee.
 	 */
 	void run();
 
@@ -65,9 +70,13 @@ namespace libtq
 	 *  Instead override wait_task::wait_task_wait.
 	 *
 	 *  @return true if the task was waited on, false otherwise.
+	 *  Note that a return of false does not imply that the
+	 *  wait_task object was not ran.  A wait_task object could of
+	 *  been ran between the time it was scheduled on a task_queue
+	 *  and wait_task::wait was called.
 	 *
 	 *  @par Exception Safety
-	 *  This method has a strong exception guarantee.
+	 *  This method has a no throw guarantee.
 	 */
 	bool wait();
 
