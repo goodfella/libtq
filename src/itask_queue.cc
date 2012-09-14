@@ -38,11 +38,21 @@ void itask_queue::queue_task(itask * const itaskp)
 
 	if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
 	{
-	    itaskp->scheduled();
-
-	    // Schedule the task after calling itask::scheduled() to
-	    // maintain the strong exception guarantee
 	    m_tasks.push_back(itaskp);
+
+	    try
+	    {
+		itaskp->scheduled();
+	    }
+	    catch(...)
+	    {
+		/* If an exception is thrown in itaskp->scheduled()
+		 * then remove the itask from the queue.  This insures
+		 * the strong exception guarantee provided by
+		 * queue_task. */
+		m_tasks.pop_back();
+		throw;
+	    }
 
 	    // task queue was empty signal the task runner
 	    if( m_tasks.size() == 1 )
