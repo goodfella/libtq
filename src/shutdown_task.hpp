@@ -1,7 +1,6 @@
 #ifndef SHUTDOWN_TASK_HPP
 #define SHUTDOWN_TASK_HPP
 
-#include <pthread.h>
 #include "wait_task.hpp"
 
 namespace libtq
@@ -11,7 +10,7 @@ namespace libtq
     {
 	public:
 
-	void wait_task_run();
+	void wait_task_run() override;
     };
 }
 

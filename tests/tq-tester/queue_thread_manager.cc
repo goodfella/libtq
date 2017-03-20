@@ -1,6 +1,8 @@
 #include <unistd.h>
 #include <stdexcept>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 #include "queue_thread_manager.hpp"
 #include "task_queue.hpp"
@@ -18,63 +20,57 @@ queue_thread_manager::queue_thread_manager(task_queue* const queue):
     m_data(queue, &m_stop_threads)
 {}
 
-queue_thread_manager::~queue_thread_manager()
-{
-    stop_threads();
-}
-
 void queue_thread_manager::start_threads()
 {
-    m_shutdown_thread.start(queue_thread_manager::shutdown_queue, &m_data, "shutdown queue thread");
-    m_stop_thread.start(queue_thread_manager::stop_queue, &m_data, "stop queue thread");
-    m_flush_thread.start(queue_thread_manager::flush_queue, &m_data, "flush queue thread");
+    m_shutdown_thread = std::thread{&queue_thread_manager::shutdown_queue, &m_data};
+    m_stop_thread = std::thread{&queue_thread_manager::stop_queue, &m_data};
+    m_flush_thread = std::thread{&queue_thread_manager::flush_queue, &m_data};
 }
 
 void queue_thread_manager::stop_threads()
 {
     m_stop_threads.set(true);
 
-    m_shutdown_thread.join();
-    m_stop_thread.join();
-    m_flush_thread.join();
+    if ( m_shutdown_thread.joinable())
+    {
+        m_shutdown_thread.join();
+    }
+
+    if ( m_stop_thread.joinable() )
+    {
+        m_stop_thread.join();
+    }
+
+    if ( m_flush_thread.joinable() )
+    {
+        m_flush_thread.join();
+    }
 }
 
-void* queue_thread_manager::shutdown_queue(void* d)
+void queue_thread_manager::shutdown_queue(queue_thread_data* data)
 {
-    queue_thread_data* data = static_cast<queue_thread_data*>(d);
-
     while ( data->stop_thread->get() == false )
     {
 	data->queue->start_queue();
-	sleep(1);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 	data->queue->shutdown_queue();
     }
-
-    return NULL;
 }
 
-void* queue_thread_manager::stop_queue(void* d)
+void queue_thread_manager::stop_queue(queue_thread_data* data)
 {
-    queue_thread_data* data = static_cast<queue_thread_data*>(d);
-
     while( data->stop_thread->get() == false )
     {
 	data->queue->stop_queue();
-	sleep(1);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-
-    return NULL;
 }
 
-void* queue_thread_manager::flush_queue(void* d)
+void queue_thread_manager::flush_queue(queue_thread_data* data)
 {
-    queue_thread_data* data = static_cast<queue_thread_data*>(d);
-
     while( data->stop_thread->get() == false )
     {
 	data->queue->flush();
-	pthread_yield();
+        std::this_thread::yield();
     }
-
-    return NULL;
 }

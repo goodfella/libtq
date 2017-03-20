@@ -1,7 +1,8 @@
 #ifndef WAIT_TASK_HPP
 #define WAIT_TASK_HPP
 
-#include <pthread.h>
+#include <mutex>
+#include <condition_variable>
 #include "itask.hpp"
 
 namespace libtq
@@ -59,7 +60,7 @@ namespace libtq
 	 *  method should have a no throw guarantee; however, a
 	 *  non-compliant itask may not honor the guarantee.
 	 */
-	void run();
+	 void run() override;
 
 	/// Blocks the calling thread until wait_task::run is invoked
 	/**
@@ -74,7 +75,6 @@ namespace libtq
 	 *  This method has a no throw guarantee.
 	 */
 	void wait();
-
 
 	private:
 
@@ -139,8 +139,8 @@ namespace libtq
 	/// Used by wait_task::wait to know if the task is scheduled
 	counter_t m_scheduled;
 
-	pthread_mutex_t m_lock;
-	pthread_cond_t m_cond;
+	std::mutex m_mutex;
+	std::condition_variable m_cond;
     };
 }
 

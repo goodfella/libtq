@@ -2,10 +2,10 @@
 #define TASK_THREAD_MANAGER_HPP
 
 #include <string>
+#include <thread>
 
 #include "bool_flag.hpp"
 #include "test_task.hpp"
-#include "thread.hpp"
 
 namespace libtq
 {
@@ -41,13 +41,13 @@ namespace tq_tester
 	std::string m_label;
 	task_thread_data m_desc;
 
-	libtq::thread m_sch_thread;
-	libtq::thread m_scheduler_thread;
-	libtq::thread m_wait_thread;
+	std::thread m_sch_thread;
+	std::thread m_scheduler_thread;
+	std::thread m_wait_thread;
 
-	static void* task_sch_handler(void* task);
-	static void* task_scheduler(void* data);
-	static void* wait_handler(void* data);
+	static void task_sch_handler(task_thread_data* data);
+	static void task_scheduler(task_thread_data* data);
+	static void wait_handler(task_thread_data* data);
     };
 }
 

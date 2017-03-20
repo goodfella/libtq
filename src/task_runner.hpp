@@ -1,7 +1,7 @@
 #ifndef TASK_RUNNER_HPP
 #define TASK_RUNNER_HPP
 
-#include <pthread.h>
+#include <thread>
 
 namespace libtq
 {
@@ -14,6 +14,9 @@ namespace libtq
 
 	task_runner();
 
+	task_runner(const task_runner&) = delete;
+	task_runner& operator=(const task_runner&) = delete;
+
 	/** Starts running tasks from the given queue
 	 *
 	 */
@@ -24,15 +27,11 @@ namespace libtq
 
 	private:
 
-	// No copying allowed since copying a pthread_t is not defined
-	task_runner(const task_runner& rhs);
-	task_runner& operator=(const task_runner& rhs);
-
 	bool m_started;
-	pthread_t m_thread;
+	std::thread m_thread;
 
 	/// Thread function that runs tasks
-	static void* run_tasks(void* queue);
+	static void run_tasks(itask_queue* queue);
     };
 }
 

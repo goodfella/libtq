@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 	return 1;
     }
 
-    int num_task_threads = atoi(argv[1]);
+    const int num_task_threads = atoi(argv[1]);
 
     if( num_task_threads == 0 )
     {

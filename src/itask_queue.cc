@@ -1,29 +1,19 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
+#include <mutex>
+#include <condition_variable>
 
 #include "itask_queue.hpp"
 #include "itask.hpp"
-#include "mutex_lock.hpp"
 #include "runner_canceled.hpp"
 
-using namespace std;
 using namespace libtq;
 
 itask_queue::itask_queue()
 {
-    pthread_mutex_init(&m_lock, NULL);
-    pthread_cond_init(&m_cond, NULL);
-
-    mutex_lock lock(&m_lock);
-
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_cancel = false;
-}
-
-itask_queue::~itask_queue()
-{
-    pthread_cond_destroy(&m_cond);
-    pthread_mutex_destroy(&m_lock);
 }
 
 void itask_queue::queue_task(itask * const itaskp)
@@ -34,9 +24,9 @@ void itask_queue::queue_task(itask * const itaskp)
 	/* There's a separate scope here so the signal can be done
 	 * without holding the mutex. */
 
-	mutex_lock lock(&m_lock);
+	std::lock_guard<std::mutex> lock(m_mutex);
 
-	if( find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
+	if( std::find(m_tasks.begin(), m_tasks.end(), itaskp) == m_tasks.end() )
 	{
 	    m_tasks.push_back(itaskp);
 
@@ -65,24 +55,24 @@ void itask_queue::queue_task(itask * const itaskp)
     if( signal == true )
     {
 	/* Signal a waiting thread if the queue was previously empty */
-	pthread_cond_signal(&m_cond);
+	m_cond.notify_one();
     }
 }
 
 void itask_queue::set_cancel()
 {
     {
-	mutex_lock lock(&m_lock);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	m_cancel = true;
     }
 
     // Wake up any waiting task runners
-    pthread_cond_broadcast(&m_cond);
+    m_cond.notify_all();
 }
 
 void itask_queue::clear_cancel()
 {
-    mutex_lock lock(&m_lock);
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_cancel = false;
 }
 
@@ -91,33 +81,37 @@ void itask_queue::run_task()
     itask* task = NULL;
 
     {
-	mutex_lock lock(&m_lock);
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	if( m_cancel == true )
 	{
 	    throw runner_canceled();
 	}
 
-	while( m_tasks.empty() == true )
-	{
-	    // wait until the queue is not empty
-	    pthread_cond_wait(&m_cond, &m_lock);
+	m_cond.wait(lock,
+		    [&] {
+			    if (m_cancel == true) {
+				return true;
+			    }
 
-	    if( m_cancel == true )
-	    {
-		throw runner_canceled();
-	    }
+			    return m_tasks.empty() ? false : true;
+		    });
+
+	if (m_cancel == true)
+	{
+	    throw runner_canceled();
 	}
 
 	// At this point the queue is not empty, and we have the lock
-	// from either the mutex_lock at the top, or from the
-	// pthread_cond_wait in the while loop
+	// from either the std::unique_lock at the top, or from the
+	// condition wait
 
 	// Get a copy of the task pointer and remove the task from the
 	// task list
+
 	task = m_tasks.front();
 	m_tasks.pop_front();
     }
-    
+
     task->run();
 }

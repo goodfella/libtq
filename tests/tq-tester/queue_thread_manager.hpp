@@ -1,9 +1,8 @@
 #ifndef QUEUE_THREAD_MANAGER_HPP
 #define QUEUE_THREAD_MANAGER_HPP
 
-#include <pthread.h>
+#include <thread>
 
-#include "thread.hpp"
 #include "bool_flag.hpp"
 
 namespace libtq
@@ -26,23 +25,22 @@ namespace tq_tester
 	public:
 
 	queue_thread_manager(libtq::task_queue* const queue);
-	~queue_thread_manager();
 
 	void start_threads();
 	void stop_threads();
 
 	private:
 
-	libtq::thread m_shutdown_thread;
-	libtq::thread m_stop_thread;
-	libtq::thread m_flush_thread;
+	std::thread m_shutdown_thread;
+	std::thread m_stop_thread;
+	std::thread m_flush_thread;
 
 	bool_flag m_stop_threads;
 	queue_thread_data m_data;
 
-	static void* shutdown_queue(void* d);
-	static void* stop_queue(void* d);
-	static void* flush_queue(void* d);
+	static void shutdown_queue(queue_thread_data* d);
+	static void stop_queue(queue_thread_data* d);
+	static void flush_queue(queue_thread_data* d);
     };
 }
 

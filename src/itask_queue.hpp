@@ -1,8 +1,9 @@
 #ifndef ITASK_QUEUE_HPP
 #define ITASK_QUEUE_HPP
 
-#include <pthread.h>
 #include <list>
+#include <mutex>
+#include <condition_variable>
 
 namespace libtq
 {
@@ -21,7 +22,11 @@ namespace libtq
 	 *  destructor is ran, or having tasks that are still queued,
 	 *  is undefined.
 	 */
-	~itask_queue();
+	 ~itask_queue() = default;
+
+				// No copying allowed
+	itask_queue(const itask_queue&) = delete;
+	itask_queue& operator=(const itask_queue&) = delete;
 
 	/** Queues a task
 	 *
@@ -50,10 +55,6 @@ namespace libtq
 
 	private:
 
-	// No copying allowed
-	itask_queue(const itask_queue& rhs);
-	itask_queue& operator=(const itask_queue& rhs);
-
 	/// Set to true when threads in run_task should be canceled
 	bool m_cancel;
 
@@ -61,10 +62,10 @@ namespace libtq
 	std::list<itask*> m_tasks;
 
 	/// Protects the m_tasks list and m_cancel
-	pthread_mutex_t m_lock;
+	std::mutex m_mutex;
 
 	/// Used to signal a thread waiting on an empty task list
-	pthread_cond_t m_cond;
+	std::condition_variable m_cond;
     };
 }
 

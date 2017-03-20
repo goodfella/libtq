@@ -1,29 +1,25 @@
 #include <signal.h>
 #include <algorithm>
+#include <thread>
+#include <mutex>
 #include <iostream>
 
 #include "task_queue.hpp"
 #include "itask.hpp"
-#include "mutex_lock.hpp"
 #include "shutdown_task.hpp"
 #include "wait_task.hpp"
 
-using namespace std;
 using namespace libtq;
 
 task_queue::task_queue()
 {
-    pthread_mutex_init(&m_shutdown_lock, NULL);
-
-    mutex_lock lock(&m_shutdown_lock);
-
+    std::lock_guard<std::mutex> lock(m_shutdown_mutex);
     m_started = false;
 }
 
 task_queue::~task_queue()
 {
     stop_queue();
-    pthread_mutex_destroy(&m_shutdown_lock);
 }
 
 inline void task_queue::locked_start_queue()
@@ -34,7 +30,7 @@ inline void task_queue::locked_start_queue()
 
 void task_queue::start_queue()
 {
-    mutex_lock lock(&m_shutdown_lock);
+    std::lock_guard<std::mutex> lock(m_shutdown_mutex);
 
     if( m_started == true )
     {
@@ -46,7 +42,7 @@ void task_queue::start_queue()
 
 void task_queue::shutdown_queue()
 {
-    mutex_lock shutdown_lock(&m_shutdown_lock);
+    std::lock_guard<std::mutex> lock(m_shutdown_mutex);
 
     if( m_started == false )
     {
@@ -66,7 +62,7 @@ void task_queue::shutdown_queue()
 
 void task_queue::flush()
 {
-    mutex_lock lock(&m_shutdown_lock);
+    std::lock_guard<std::mutex> lock(m_shutdown_mutex);
 
     bool stop_queue = false;
 
@@ -118,7 +114,7 @@ void task_queue::locked_stop_queue()
 
 void task_queue::stop_queue()
 {
-    mutex_lock shutdown_lock(&m_shutdown_lock);
+    std::lock_guard<std::mutex> lock(m_shutdown_mutex);
 
     if( m_started == false )
     {
@@ -126,4 +122,8 @@ void task_queue::stop_queue()
     }
 
     locked_stop_queue();
+}
+
+void task_queue::queue_task(itask * const task) {
+    m_queue.queue_task(task);
 }

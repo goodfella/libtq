@@ -2,7 +2,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(libtq-test CXX)
 
 ADD_LIBRARY(tq-test STATIC
-  src/thread.cc
   src/bool_flag.cc)
 
 INCLUDE_DIRECTORIES(include)

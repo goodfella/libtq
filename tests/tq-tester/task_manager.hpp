@@ -3,6 +3,9 @@
 
 #include <string>
 #include <vector>
+#include <memory>
+
+#include "task_thread_manager.hpp"
 
 namespace libtq
 {
@@ -11,14 +14,12 @@ namespace libtq
 
 namespace tq_tester
 {
-    class task_thread_manager;
 
     class task_manager
     {
 	public:
 
 	task_manager(libtq::task_queue * const queue);
-	~task_manager();
 
 	void add_task(const std::string& label);
 
@@ -30,7 +31,7 @@ namespace tq_tester
 	private:
 
 	libtq::task_queue* m_queue;
-	std::vector<task_thread_manager*> m_tasks;
+	std::vector<std::unique_ptr<task_thread_manager>> m_tasks;
     };
 }
 

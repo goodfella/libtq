@@ -16,11 +16,7 @@ void task_runner::start(itask_queue* const queue)
 	return;
     }
 
-    if( pthread_create(&m_thread, NULL, &task_runner::run_tasks, queue) != 0 )
-    {
-	throw std::runtime_error("failed to start task_runner thread");
-    }
-
+    m_thread = std::thread{&task_runner::run_tasks, queue};
     m_started = true;
 }
 
@@ -31,15 +27,12 @@ void task_runner::join()
 	return;
     }
 
-    pthread_join(m_thread, NULL);
-
+    m_thread.join();
     m_started = false;
 }
 
-void* task_runner::run_tasks(void* q)
+void task_runner::run_tasks(itask_queue* queue)
 {
-    itask_queue * queue = static_cast<itask_queue*>(q);
-
     do
     {
 	try
@@ -50,10 +43,8 @@ void* task_runner::run_tasks(void* q)
 	catch (const runner_canceled& ex )
 	{
 	    // task runner was canceled
-	    return NULL;
+	    return;
 	}
 
     } while ( true );
-
-    return NULL;
 }

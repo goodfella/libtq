@@ -1,48 +1,42 @@
 #include <limits>
 #include <stdexcept>
+#include <mutex>
+#include <condition_variable>
 
 #include "wait_task.hpp"
-#include "mutex_lock.hpp"
 #include "task_queue.hpp"
 
 using namespace libtq;
 
 wait_task::wait_task()
 {
-    pthread_mutex_init(&m_lock, NULL);
-    pthread_cond_init(&m_cond, NULL);
-
-    mutex_lock lock(&m_lock);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     m_counter = 0;
     m_scheduled = 0;
 }
 
-wait_task::~wait_task()
-{
-    pthread_cond_destroy(&m_cond);
-    pthread_mutex_destroy(&m_lock);
-}
+wait_task::~wait_task() {}
 
 void wait_task::signal_waiters()
 {
-    mutex_lock lock(&m_lock);
-
-    if( m_scheduled > 0 )
     {
+	std::lock_guard<std::mutex> lock(m_mutex);
+	if ( m_scheduled == 0 )
+	{
+	    return;
+	}
+
 	// Only increment m_counter if there are potentially threads
 	// waiting for it to change.
 	++m_counter;
 
 	// Only decrement m_scheduled if the task is scheduled that
-	// way m_scheduled does not wrap from 0 - 1.
+	// way m_scheduled does not wrap from 0 to -1.
 	--m_scheduled;
-
-	// No need to broadcast the condition if there are no blocked
-	// threads.  When m_scheduled == 0, wait_task::wait does not
-	// block.
-	pthread_cond_broadcast(&m_cond);
     }
+
+    m_cond.notify_all();
 }
 
 void wait_task::scheduled()
@@ -50,7 +44,7 @@ void wait_task::scheduled()
     // Let sub-classes know they've been scheduled
     wait_task_scheduled();
 
-    mutex_lock lock(&m_lock);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ++m_scheduled;
 }
 
@@ -66,7 +60,7 @@ void wait_task::wait()
 
     wait_task_wait();
 
-    mutex_lock lock(&m_lock);
+    std::unique_lock<std::mutex> lock(m_mutex);
 
     if( m_scheduled == 0 )
     {
@@ -75,12 +69,7 @@ void wait_task::wait()
     }
 
     counter = m_counter;
-
-    // Wait until the counters are not equal which means the task was ran
-    while( counter == m_counter )
-    {
-	pthread_cond_wait(&m_cond, &m_lock);
-    }
+    m_cond.wait(lock, [&] {return counter != m_counter;});
 }
 
 void wait_task::wait_task_run()

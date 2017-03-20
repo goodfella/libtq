@@ -1,7 +1,8 @@
 #ifndef TASK_QUEUE_HPP
 #define TASK_QUEUE_HPP
 
-#include <pthread.h>
+#include <thread>
+#include <mutex>
 
 #include "itask_queue.hpp"
 #include "task_runner.hpp"
@@ -48,6 +49,11 @@ namespace libtq
 
 	/// @note The destructor makes no attempt to run or cancel any pending tasks.
 	~task_queue();
+
+	/// Copying is prohibited
+	task_queue(const task_queue&) = delete;
+	task_queue& operator =(const task_queue&) = delete;
+
 
 	/// Starts the task queue's task runner thread
 	void start_queue();
@@ -101,7 +107,7 @@ namespace libtq
 	bool m_started;
 
 	/// Protects the m_started predicate.
-	pthread_mutex_t m_shutdown_lock;
+	std::mutex m_shutdown_mutex;
 
 	/// Underlying task queue
 	itask_queue m_queue;
@@ -117,16 +123,8 @@ namespace libtq
 
 	/// Assumes the m_shutdown_lock mutex is locked
 	void locked_start_queue();
+};
 
-	/// Copying is prohibited
-	task_queue(const task_queue&);
-	task_queue& operator =(const task_queue&);
-    };
-
-    inline void task_queue::queue_task(itask * const taskp)
-    {
-	m_queue.queue_task(taskp);
-    }
 }
 
 #endif

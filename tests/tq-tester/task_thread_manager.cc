@@ -23,13 +23,18 @@ task_thread_manager::task_thread_manager(const string& label, task_queue * const
 
 void task_thread_manager::start_threads()
 {
-    m_sch_thread.start(&task_thread_manager::task_sch_handler, &m_desc, "task scheduler");
-    m_scheduler_thread.start(&task_thread_manager::task_scheduler, &m_desc, "task scheduler");
-    m_wait_thread.start(&task_thread_manager::wait_handler, &m_desc, "wait handler");
+    m_sch_thread = std::thread{&task_thread_manager::task_sch_handler, &m_desc};
+    m_scheduler_thread = std::thread{&task_thread_manager::task_scheduler, &m_desc};
+    m_wait_thread = std::thread{&task_thread_manager::wait_handler, &m_desc};
 }
 
 void task_thread_manager::stop_threads()
 {
+    if (m_stop_threads.get())
+    {
+        return;
+    }
+
     // make sure the queue is started so the threads can clean up
     m_desc.queue->start_queue();
 
@@ -37,13 +42,23 @@ void task_thread_manager::stop_threads()
     m_stop_threads.set(true);
 
     // make sure all the threads are stopped
-    m_sch_thread.join();
-    m_scheduler_thread.join();
+    if ( m_sch_thread.joinable() )
+    {
+        m_sch_thread.join();
+    }
+
+    if ( m_scheduler_thread.joinable() )
+    {
+        m_scheduler_thread.join();
+    }
 
     // Make sure the task is not scheduled
     m_desc.queue->flush();
 
-    m_wait_thread.join();
+    if ( m_wait_thread.joinable() )
+    {
+        m_wait_thread.join();
+    }
 }
 
 task_thread_manager::~task_thread_manager()
@@ -57,23 +72,17 @@ void task_thread_manager::print_stats() const
 	 << m_label << " wait count = " << m_task.waitcount() << endl << endl;
 }
 
-void* task_thread_manager::task_sch_handler(void* t)
+void task_thread_manager::task_sch_handler(task_thread_data* data)
 {
-    task_thread_data* desc = static_cast<task_thread_data*>(t);
-
-    while( desc->stop_thread->get() == false )
+    while( data->stop_thread->get() == false )
     {
-	desc->queue->queue_task(desc->taskp);
-	pthread_yield();
+        data->queue->queue_task(data->taskp);
+        std::this_thread::yield();
     };
-
-    pthread_exit(NULL);
 }
 
-void* task_thread_manager::task_scheduler(void* d)
+void task_thread_manager::task_scheduler(task_thread_data* data)
 {
-    task_thread_data* data = static_cast<task_thread_data*>(d);
-
     static const int task_count = 10;
     test_task tasks[task_count];
 
@@ -89,23 +98,17 @@ void* task_thread_manager::task_scheduler(void* d)
 	    tasks[i].wait();
 	}
 
-	pthread_yield();
+        std::this_thread::yield();
     }
 
     data->queue->flush();
-
-    return NULL;
 }
 
-void* task_thread_manager::wait_handler(void* d)
+void task_thread_manager::wait_handler(task_thread_data* data)
 {
-    task_thread_data* data = static_cast<task_thread_data*>(d);
-
     while( data->stop_thread->get() == false )
     {
 	data->taskp->wait();
-	pthread_yield();
+        std::this_thread::yield();
     }
-
-    return NULL;
 }

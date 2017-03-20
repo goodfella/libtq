@@ -1,3 +1,4 @@
+#include <mutex>
 #include "test_task.hpp"
 
 using namespace tq_tester;
@@ -6,29 +7,18 @@ using namespace libtq;
 test_task::test_task():
     m_runcount(0),
     m_waitcount(0)
-{
-    pthread_mutex_init(&m_lock, NULL);
-}
-
-test_task::~test_task()
-{
-    pthread_mutex_destroy(&m_lock);
-}
+{}
 
 void test_task::inc_counter(unsigned long& counter)
 {
-    pthread_mutex_lock(&m_lock);
+    std::lock_guard<std::mutex> lock(m_mutex);
     ++counter;
-    pthread_mutex_unlock(&m_lock);
 }
 
 const unsigned long test_task::counter(const unsigned long& counter) const
 {
-    unsigned long temp;
-    pthread_mutex_lock(&m_lock);
-    temp = counter;
-    pthread_mutex_unlock(&m_lock);
-    return temp;
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return counter;
 }
 
 const unsigned long test_task::runcount() const
